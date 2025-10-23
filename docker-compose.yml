@@ -1,0 +1,40 @@
+version: '3.8'
+
+x-globals: &globals
+  VULKAN_PORT: 3000
+
+services:
+  vulkan:
+    build:
+      context: ./vulkan
+    container_name: vulkan
+    restart: always
+    environment:
+      - PORT=${VULKAN_PORT}
+      - NODE_ENV=prod
+      
+    env_file:
+      - .env.prod-secrets 
+      
+    ports:
+      - "${VULKAN_PORT}:${VULKAN_PORT}"
+
+
+sumeetsaini_com:
+    build:
+      context: ./sumeetsaini_com
+    container_name: sumeetsaini_com
+    restart: always
+
+gateway:
+    image: nginx:stable-alpine
+    container_name: gateway_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - sumeetsaini_com
+      - vulkan

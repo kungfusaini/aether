@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  vulkan:
+    environment:
+      - NODE_ENV=dev
+    env_file:
+      - .env.dev-secrets
+    volumes:
+      - ./vulkan:/app
+  
+  sumeetsaini_com:
+    volumes:
+      - ./website:/usr/share/nginx/html:ro
