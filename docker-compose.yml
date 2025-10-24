@@ -1,8 +1,3 @@
-version: '3.8'
-
-x-globals: &globals
-  VULKAN_PORT: 3000
-
 services:
   vulkan:
     build:
@@ -10,23 +5,18 @@ services:
     container_name: vulkan
     restart: always
     environment:
+      # From .env file
       - PORT=${VULKAN_PORT}
-      - NODE_ENV=prod
-      
-    env_file:
-      - .env.prod-secrets 
-      
     ports:
       - "${VULKAN_PORT}:${VULKAN_PORT}"
 
-
-sumeetsaini_com:
+  sumeetsaini_com:
     build:
       context: ./sumeetsaini_com
     container_name: sumeetsaini_com
     restart: always
 
-gateway:
+  gateway:
     image: nginx:stable-alpine
     container_name: gateway_nginx
     restart: always

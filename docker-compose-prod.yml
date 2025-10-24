@@ -1,0 +1,6 @@
+services:
+  vulkan:
+    environment:
+      - NODE_ENV=prod
+    env_file:
+      - ./vulkan/.env.prod-secrets
