@@ -3,7 +3,6 @@ services:
     environment:
       - NODE_ENV=dev
       - TEST_MAIL=${TEST_MAIL}
-      - GEN_MAIL_CREDS=${GEN_MAIL_CREDS}
     env_file:
       - ./vulkan/.env.dev.secrets
     volumes:
