@@ -2,7 +2,6 @@ services:
   vulkan:
     environment:
       - NODE_ENV=dev
-      - TEST_MAIL=${TEST_MAIL}
     env_file:
       - ./vulkan/.env.dev.secrets
     volumes:
