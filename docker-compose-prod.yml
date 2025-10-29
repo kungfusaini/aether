@@ -1,9 +1,17 @@
-services:
+ services:
   vulkan:
+    build:
+      context: ./vulkan
+      dockerfile: Dockerfile.prod
     environment:
       - NODE_ENV=prod
     env_file:
       - ./vulkan/.env.prod.secrets
+
+  sumeetsaini_com:
+    build:
+      context: ./sumeetsaini_com
+      dockerfile: Dockerfile.prod
 
   gateway:
     volumes:
