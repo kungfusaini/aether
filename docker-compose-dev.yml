@@ -17,6 +17,7 @@
       dockerfile: Dockerfile.dev
     volumes:
       - ./sumeetsaini_com:/usr/share/nginx/html
+      - /usr/share/nginx/html/node_modules
 
   gateway:
     image: nginx:stable-alpine
