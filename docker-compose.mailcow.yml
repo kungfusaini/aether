@@ -1,23 +1,11 @@
 # Mailcow Dockerized Integration
 # This file integrates the existing mailcow setup with unified orchestration
-# Mailcow continues to use its own network for compatibility
 
 # Import mailcow services
 include:
   - /opt/mailcow-dockerized/docker-compose.yml
 
-# Define networks for both systems
+# Define additional network for aether integration
 networks:
   aether-network:
     external: true
-  mailcow-network:
-    external: true
-
-# Service overrides to add network connectivity
-services:
-  nginx-mailcow:
-    networks:
-      - mailcow-network
-      - aether-network
-    depends_on:
-      - gateway
