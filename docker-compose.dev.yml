@@ -1,0 +1,22 @@
+services:
+  sumeetsaini_com:
+    volumes:
+      - ./services/sumeetsaini_com:/app
+      - /app/node_modules
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=dev
+      
+  vulkan:
+    volumes:
+      - ./services/vulkan:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./services/vulkan/.env.dev.secrets
+      
+  gateway:
+    volumes:
+      - ./services/gateway/sites/dev:/etc/nginx/conf.d:ro

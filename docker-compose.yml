@@ -1,30 +1,36 @@
 services:
+  sumeetsaini_com:
+    build: 
+      context: ./services/sumeetsaini_com
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    container_name: sumeetsaini_com
+    
   vulkan:
     build:
-      context: ./vulkan
-    container_name: vulkan
-    restart: always
+      context: ./services/vulkan  
+      dockerfile: Dockerfile.dev
     environment:
-      # From .env file
-      - PORT=${VULKAN_PORT}
-      - HOST=${VULKAN_HOST}
-      - MAIL_ENABLED=${MAIL_ENABLED}
-    ports:
-      - "${VULKAN_PORT}:${VULKAN_PORT}"
-
-  sumeetsaini_com:
-    build:
-      context: ./sumeetsaini_com
-    container_name: sumeetsaini_com
-    restart: always
-
+      - NODE_ENV=dev
+      - PORT=3000
+      - HOST=0.0.0.0
+      - MAIL_ENABLED=false
+    restart: unless-stopped
+    container_name: vulkan
+    
   gateway:
-    image: nginx:stable-alpine
-    container_name: gateway_nginx
-    restart: always
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       - sumeetsaini_com
       - vulkan
+    restart: unless-stopped
+    container_name: gateway_nginx
+
+networks:
+  default:
+    name: aether-network

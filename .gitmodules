@@ -1,6 +1,6 @@
-[submodule "vulkan"]
-	path = vulkan
-	url = https://github.com/kungfusaini/vulkan
-[submodule "sumeetsaini_com"]
-	path = sumeetsaini_com
-	url = https://github.com/kungfusaini/sumeetsaini_com
+[submodule "services/sumeetsaini_com"]
+	path = services/sumeetsaini_com
+	url = git@github.com:kungfusaini/sumeetsaini_com.git
+[submodule "services/vulkan"]
+	path = services/vulkan
+	url = git@github.com:kungfusaini/vulkan.git

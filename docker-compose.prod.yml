@@ -1,0 +1,20 @@
+services:
+  sumeetsaini_com:
+    build:
+      dockerfile: Dockerfile.prod
+    image: ghcr.io/kungfusaini/sumeetsaini_com:latest
+    
+  vulkan:
+    build:
+      dockerfile: Dockerfile.prod
+    image: ghcr.io/kungfusaini/vulkan:latest
+    environment:
+      - NODE_ENV=prod
+      - MAIL_ENABLED=true
+    env_file:
+      - ./services/vulkan/.env.prod.secrets
+      
+  gateway:
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./services/gateway/sites/prod:/etc/nginx/conf.d:ro
