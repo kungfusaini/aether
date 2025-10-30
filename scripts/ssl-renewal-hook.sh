@@ -4,7 +4,8 @@ set -e
 echo "SSL renewal hook triggered for: $RENEWED_LINEAGE"
 
 # Restart gateway nginx for renewed certificates
-if [[ "$RENEWED_LINEAGE" == *"/sumeetsaini.com"* ]]; then
+if [[ "$RENEWED_LINEAGE" == *"/sumeetsaini.com"* ]] || \
+   [[ "$RENEWED_LINEAGE" == *"/vulkan.sumeetsaini.com"* ]]; then
     echo "Restarting gateway nginx for renewed SSL certificates..."
     docker restart gateway_nginx || echo "Warning: Could not restart gateway_nginx"
 fi
