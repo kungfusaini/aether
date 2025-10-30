@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
@@ -30,6 +30,7 @@ jobs:
         context: ./vulkan
         file: ./vulkan/Dockerfile.prod
         push: true
+        platforms: linux/arm64
         tags: ghcr.io/kungfusaini/vulkan:latest
 
     - name: Build and push sumeetsaini_com image
@@ -38,6 +39,7 @@ jobs:
         context: ./sumeetsaini_com
         file: ./sumeetsaini_com/Dockerfile.prod
         push: true
+        platforms: linux/arm64
         tags: ghcr.io/kungfusaini/sumeetsaini_com:latest
 
     - name: Sync compose files to AETHER
