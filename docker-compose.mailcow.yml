@@ -5,6 +5,3 @@ include:
 networks:
   aether-network:
     external: true
-  mailcow-network:
-    external: true
-    name: mailcowdockerized_mailcow-network
