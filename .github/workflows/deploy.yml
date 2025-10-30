@@ -1,0 +1,63 @@
+name: Deploy to Aether
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Vulkan image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./vulkan
+        file: ./vulkan/Dockerfile.prod
+        push: true
+        tags: ghcr.io/kungfusaini/vulkan:latest
+
+    - name: Build and push sumeetsaini_com image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./sumeetsaini_com
+        file: ./sumeetsaini_com/Dockerfile.prod
+        push: true
+        tags: ghcr.io/kungfusaini/sumeetsaini_com:latest
+
+    - name: Sync compose files to AETHER
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.AETHER_HOST }}
+        username: ${{ secrets.AETHER_USER }}
+        key: ${{ secrets.AETHER_SSH_KEY }}
+        source: "docker-compose*.yml,gateway/"
+        target: ${{ secrets.AETHER_PATH }}
+        strip_components: 0
+
+    - name: Deploy to AETHER
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.AETHER_HOST }}
+        username: ${{ secrets.AETHER_USER }}
+        key: ${{ secrets.AETHER_SSH_KEY }}
+        script: |
+          cd ${{ secrets.AETHER_PATH }}
+          docker compose -f docker-compose.yml -f docker-compose-prod.yml pull
+          docker compose -f docker-compose.yml -f docker-compose-prod.yml up -d
+
