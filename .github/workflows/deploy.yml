@@ -65,39 +65,15 @@ jobs:
           # Create network if it doesn't exist
           docker network create aether-network 2>/dev/null || true
           
-          # Pull and deploy main services
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+          # Pull and deploy all services at once
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.mailcow.yml pull
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.mailcow.yml up -d
           
           # Wait for services to be ready
           sleep 10
           
-          # Deploy mailcow integration (production only)
-          if [ -f docker-compose.mailcow.yml ]; then
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.mailcow.yml up -d
-          fi
+          # Restart gateway to refresh DNS resolution
+          docker restart gateway_nginx
           
           # Clean up old images
           docker image prune -f
-
-    - name: Health check
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.AETHER_HOST }}
-        username: ${{ secrets.AETHER_USER }}
-        key: ${{ secrets.AETHER_SSH_KEY }}
-        script: |
-          cd ${{ secrets.AETHER_PATH }}
-          
-          # Wait for services to fully start
-          sleep 30
-          
-          # Check service health
-          echo "=== Service Status ==="
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-          
-          echo "=== Health Checks ==="
-          curl -f -s -o /dev/null -w "Frontend: %{http_code}\n" https://sumeetsaini.com || echo "Frontend check failed"
-          curl -f -s -o /dev/null -w "API: %{http_code}\n" https://vulkan.sumeetsaini.com/status || echo "API check failed"
-          curl -f -s -o /dev/null -w "Mail: %{http_code}\n" https://mail.sumeetsaini.com || echo "Mail check failed"
-
