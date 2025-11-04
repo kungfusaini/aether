@@ -11,8 +11,8 @@ services:
     environment:
       - NODE_ENV=prod
       - MAIL_ENABLED=true
-    env_file:
-      - ./services/vulkan/.env.prod.secrets
+      - MAILCOW_HOST=mailcowdockerized-postfix-mailcow-1
+      - CONTACT_EMAIL=${CONTACT_EMAIL}
       
   gateway:
     volumes:

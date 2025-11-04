@@ -11,8 +11,8 @@
 - `npm test` - No tests configured (placeholder)
 
 ### Full Stack
-- `docker compose -f docker-compose.yml -f docker-compose-dev.yml up` - Start all services (dev)
-- `docker compose -f docker-compose.yml -f docker-compose-prod.yml up` - Start all services (prod)
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` - Start all services (dev, zero setup)
+- `docker compose -f docker-compose.yml -f docker-compose.prod.yml up` - Start all services (prod, requires GitHub Secrets)
 
 ## Code Style Guidelines
 

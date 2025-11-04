@@ -14,7 +14,8 @@ services:
       - NODE_ENV=dev
       - PORT=3000
       - HOST=0.0.0.0
-      - MAIL_ENABLED=false
+      - MAIL_ENABLED=true
+      - FROM_EMAIL=vulkan@sumeetsaini.com
     restart: unless-stopped
     container_name: vulkan
     

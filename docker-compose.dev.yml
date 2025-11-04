@@ -9,13 +9,23 @@ services:
       - NODE_ENV=dev
       
   vulkan:
+    build:
+      context: ./services/vulkan
+      dockerfile: Dockerfile.dev
     volumes:
       - ./services/vulkan:/app
       - /app/node_modules
     ports:
       - "3000:3000"
-    env_file:
-      - ./services/vulkan/.env.dev.secrets
+    environment:
+      - NODE_ENV=dev
+      - PORT=3000
+      - HOST=0.0.0.0
+      - FROM_EMAIL=vulkan@sumeetsaini.com
+      - MAIL_ENABLED=false
+      - CONTACT_EMAIL=dev-test@example.com
+      - ETHEREAL_HOST=smtp.ethereal.email
+      - ETHEREAL_PORT=587
       
   gateway:
     volumes:

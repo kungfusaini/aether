@@ -11,8 +11,10 @@ Complete Docker Compose orchestration for sumeetsaini.com with integrated mailco
 
 ## Development
 
+### Running Services
+
 ```bash
-# Start development environment
+# Start development environment (mail enabled by default)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # View logs
@@ -21,6 +23,25 @@ docker compose logs -f
 # Stop services
 docker compose down
 ```
+
+### Email Configuration
+
+- **Mail is ENABLED BY DEFAULT** in development
+- **CONTACT_EMAIL** uses hardcoded `dev-test@example.com` for testing
+- **Ethereal credentials** auto-generated on container startup for testing
+- **To disable mail**: Set `MAIL_ENABLED=false` in `docker-compose.dev.yml`
+- **ZERO setup required** - just run and go!
+
+### How Ethereal Setup Works
+
+Instead of using init containers (which caused complexity), the application now:
+
+1. **Auto-generates Ethereal credentials** when `NODE_ENV=dev` and `MAIL_ENABLED=true`
+2. **Sets credentials as environment variables** directly in the running container
+3. **No file I/O or volume sharing needed** - credentials are available immediately
+4. **Fresh credentials each container restart** for security
+
+This approach eliminates init container complexity while maintaining the same functionality.
 
 Access:
 - Frontend: http://localhost
@@ -105,21 +126,45 @@ Automated via GitHub Actions:
 
 ## Environment Variables
 
-Development:
+### Development
 - `NODE_ENV=dev`
-- `MAIL_ENABLED=false`
+- `MAIL_ENABLED=true` (default, can be disabled by setting `MAIL_ENABLED=false` in `docker-compose.dev.yml`)
 - Volume mounts for live reloading
+- `CONTACT_EMAIL` uses hardcoded `dev-test@example.com` for testing
+- Auto-generated Ethereal credentials for testing
 
-Production:
+### Production
 - `NODE_ENV=prod` 
 - `MAIL_ENABLED=true`
+- `CONTACT_EMAIL` from GitHub Secrets
+- `MAILCOW_HOST=mailcowdockerized-postfix-mailcow-1` (public container name)
 - Pre-built images from GHCR
 - SSL certificate mounts
+
+### Secrets Management
+
+**Local Development:**
+- **ZERO setup required** - uses hardcoded `dev-test@example.com`
+- **To use real email**: Edit `docker-compose.dev.yml` and change `CONTACT_EMAIL`
+
+**Production:**
+- `CONTACT_EMAIL` injected directly from GitHub Secrets (no files on disk)
+- `MAILCOW_HOST` is public configuration in docker-compose.prod.yml
 
 ## API Endpoints
 
 - `GET /status` - Health check
 - `POST /web_contact` - Contact form (rate limited: 5/15min)
+
+### Contact Form Email Flow
+
+**Development:**
+- Emails sent to your `CONTACT_EMAIL` via Ethereal (test email service)
+- View test emails at Ethereal web interface (shown in logs)
+
+**Production:**
+- Emails sent to your `CONTACT_EMAIL` via Mailcow SMTP
+- Uses internal Docker container: `mailcowdockerized-postfix-mailcow-1`
 
 ## Features
 
