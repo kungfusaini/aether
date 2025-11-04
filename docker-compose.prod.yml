@@ -17,4 +17,4 @@ services:
   gateway:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - ./services/gateway/sites/prod:/etc/nginx/conf.d:ro
+      - ./services/gateway/conf.d:/etc/nginx/conf.d:ro

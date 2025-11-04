@@ -29,4 +29,7 @@ services:
       
   gateway:
     volumes:
-      - ./services/gateway/sites/dev:/etc/nginx/conf.d:ro
+      - ./services/gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./services/gateway/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - "80:80"
