@@ -15,6 +15,7 @@ services:
       - CONTACT_EMAIL=${CONTACT_EMAIL}
       
   gateway:
+    image: ghcr.io/kungfusaini/gateway:latest
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./services/gateway/conf.d:/etc/nginx/conf.d:ro
