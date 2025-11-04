@@ -1,7 +1,6 @@
 # Mailcow Dockerized Integration
-include:
-  - /opt/mailcow-dockerized/docker-compose.yml
-
 networks:
   aether-network:
+    external: true
+  mailcowdockerized_mailcow-network:
     external: true
