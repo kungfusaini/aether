@@ -66,8 +66,8 @@ jobs:
           docker network create aether-network 2>/dev/null || true
           
           # Pull and deploy all services at once
-          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.mailcow.yml pull
-          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.mailcow.yml up -d
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose -f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml pull
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose -f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml up -d
           
           # Wait for services to be ready
           sleep 10

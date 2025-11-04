@@ -15,7 +15,7 @@ Complete Docker Compose orchestration for sumeetsaini.com with integrated mailco
 
 ```bash
 # Start development environment (mail enabled by default)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.yml -f docker-compose-dev.yml up -d
 
 # View logs
 docker compose logs -f
@@ -29,7 +29,7 @@ docker compose down
 - **Mail is ENABLED BY DEFAULT** in development
 - **CONTACT_EMAIL** uses hardcoded `dev-test@example.com` for testing
 - **Ethereal credentials** auto-generated on container startup for testing
-- **To disable mail**: Set `MAIL_ENABLED=false` in `docker-compose.dev.yml`
+- **To disable mail**: Set `MAIL_ENABLED=false` in `docker-compose-dev.yml`
 - **ZERO setup required** - just run and go!
 
 ### How Ethereal Setup Works
@@ -51,10 +51,10 @@ Access:
 
 ```bash
 # Deploy all services including mailcow
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.mailcow.yml up -d
+docker compose -f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml up -d
 
 # Deploy without mailcow (for testing)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose-prod.yml up -d
 ```
 
 Access:
@@ -87,9 +87,9 @@ Certificates auto-renew via cron. Renewal hooks automatically restart services:
 ```
 aether/
 ├── docker-compose.yml              # Base service definitions
-├── docker-compose.dev.yml          # Development overrides
-├── docker-compose.prod.yml         # Production overrides  
-├── docker-compose.mailcow.yml      # Mailcow integration
+├── docker-compose-dev.yml          # Development overrides
+├── docker-compose-prod.yml         # Production overrides  
+├── docker-compose-mailcow.yml      # Mailcow integration
 ├── services/
 │   ├── gateway/                    # Nginx reverse proxy
 │   │   ├── Dockerfile
@@ -128,7 +128,7 @@ Automated via GitHub Actions:
 
 ### Development
 - `NODE_ENV=dev`
-- `MAIL_ENABLED=true` (default, can be disabled by setting `MAIL_ENABLED=false` in `docker-compose.dev.yml`)
+- `MAIL_ENABLED=true` (default, can be disabled by setting `MAIL_ENABLED=false` in `docker-compose-dev.yml`)
 - Volume mounts for live reloading
 - `CONTACT_EMAIL` uses hardcoded `dev-test@example.com` for testing
 - Auto-generated Ethereal credentials for testing
@@ -145,11 +145,11 @@ Automated via GitHub Actions:
 
 **Local Development:**
 - **ZERO setup required** - uses hardcoded `dev-test@example.com`
-- **To use real email**: Edit `docker-compose.dev.yml` and change `CONTACT_EMAIL`
+- **To use real email**: Edit `docker-compose-dev.yml` and change `CONTACT_EMAIL`
 
 **Production:**
 - `CONTACT_EMAIL` injected directly from GitHub Secrets (no files on disk)
-- `MAILCOW_HOST` is public configuration in docker-compose.prod.yml
+- `MAILCOW_HOST` is public configuration in docker-compose-prod.yml
 
 ## API Endpoints
 
