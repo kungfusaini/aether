@@ -21,6 +21,7 @@ services:
     image: ghcr.io/kungfusaini/gateway:latest
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./services/gateway/nginx-prod.conf:/etc/nginx/nginx.conf:ro
       - ./services/gateway/conf.d:/etc/nginx/conf.d:ro
     networks:
       - aether-network
