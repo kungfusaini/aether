@@ -1,11 +1,11 @@
 # Aether - Unified Docker Setup
 
-Complete Docker Compose orchestration for sumeetsaini.com with integrated mailcow email service.
+Complete Docker Compose orchestration for web applications with integrated services.
 
 ## Architecture
 
-- **sumeetsaini_com**: Frontend with Three.js 3D graphics
-- **vulkan**: Express.js API backend  
+- **sumeetsaini_com**: [Frontend](https://github.com/kungfusaini/sumeetsaini_com) web application
+- **vulkan**: [Backend](https://github.com/kungfusaini/vulkan) API service  
 - **gateway**: Nginx reverse proxy with SSL termination
 - **mailcow**: Email service (production only, host networking)
 
@@ -57,11 +57,6 @@ docker compose -f docker-compose.yml -f docker-compose-prod.yml -f docker-compos
 docker compose -f docker-compose.yml -f docker-compose-prod.yml up -d
 ```
 
-Access:
-- Frontend: https://sumeetsaini.com
-- API: https://vulkan.sumeetsaini.com  
-- Mail: https://mail.sumeetsaini.com
-
 ## SSL Management
 
 SSL certificates are automatically managed via Let's Encrypt with wildcard certificate `*.sumeetsaini.com`.
@@ -97,8 +92,8 @@ aether/
 │   │   └── sites/                  # Nginx configurations
 │   │       ├── dev/                # Development configs
 │   │       └── prod/               # Production configs
-│   ├── sumeetsaini_com/            # Frontend submodule
-│   └── vulkan/                     # API submodule
+│   ├── sumeetsaini_com/            # Frontend service
+│   └── vulkan/                     # Backend service
 ├── scripts/                        # Management scripts
 │   ├── ssl-renewal-hook.sh         # SSL renewal automation
 │   ├── ssl-setup.sh               # SSL hook installation
@@ -123,6 +118,25 @@ Automated via GitHub Actions:
 3. Deploys services with proper orchestration
 4. Runs health checks on all endpoints
 5. Cleans up old Docker images
+
+### GitHub Actions Workflow
+
+The deployment pipeline is triggered on:
+- **Push to main branch**: Automatic production deployment
+- **Manual workflow trigger**: On-demand deployment
+
+**Pipeline Steps:**
+1. **Build Phase**: Multi-platform Docker builds (linux/arm64)
+2. **Registry Push**: Images pushed to GitHub Container Registry
+3. **File Sync**: Configuration files synced to production server
+4. **Service Deployment**: Docker Compose orchestration with secrets
+5. **Health Verification**: Endpoint health checks and service validation
+6. **Cleanup**: Automated Docker image pruning
+
+**Security:**
+- All secrets managed via GitHub Secrets
+- No sensitive data in repository
+- Automated credential rotation support
 
 ## Environment Variables
 
@@ -151,10 +165,7 @@ Automated via GitHub Actions:
 - `CONTACT_EMAIL` injected directly from GitHub Secrets (no files on disk)
 - `MAILCOW_HOST` is public configuration in docker-compose-prod.yml
 
-## API Endpoints
 
-- `GET /status` - Health check
-- `POST /web_contact` - Contact form (rate limited: 5/15min)
 
 ### Contact Form Email Flow
 
@@ -168,11 +179,11 @@ Automated via GitHub Actions:
 
 ## Features
 
-- Interactive 3D shape animations
-- Responsive design
-- Rate-limited contact API
-- Security-hardened backend
+- Modern web application frontend
+- RESTful API backend
+- Rate-limited contact system
+- Security-hardened services
 - Containerized deployment
 - Unified Docker orchestration
-- Wildcard SSL certificate management
-- Integrated mailcow email service
+- SSL certificate management
+- Integrated email service
