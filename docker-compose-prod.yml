@@ -1,12 +1,8 @@
 services:
   sumeetsaini_com:
-    build:
-      dockerfile: Dockerfile.prod
     image: ghcr.io/kungfusaini/sumeetsaini_com:latest
     
   vulkan:
-    build:
-      dockerfile: Dockerfile.prod
     image: ghcr.io/kungfusaini/vulkan:latest
     environment:
       - NODE_ENV=prod
@@ -18,9 +14,6 @@ services:
       - mailcowdockerized_mailcow-network
       
   arcanecodex:
-    build:
-      context: ./services/arcanecodex
-      dockerfile: Dockerfile.prod
     image: ghcr.io/kungfusaini/arcanecodex:latest
     environment:
       - HUGO_ENV=production

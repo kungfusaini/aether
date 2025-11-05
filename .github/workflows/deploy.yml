@@ -66,7 +66,7 @@ jobs:
         host: ${{ secrets.AETHER_HOST }}
         username: ${{ secrets.AETHER_USER }}
         key: ${{ secrets.AETHER_SSH_KEY }}
-        source: "docker-compose*.yml,services/,scripts/"
+        source: "docker-compose*.yml,scripts/"
         target: ${{ secrets.AETHER_PATH }}
         strip_components: 0
         overwrite: true
