@@ -53,11 +53,18 @@ jobs:
         platforms: linux/arm64
         tags: ghcr.io/kungfusaini/gateway:latest
 
+    - name: Checkout latest arcanecodex content
+      uses: actions/checkout@v4
+      with:
+        repository: kungfusaini/arcane-codex
+        path: ./arcanecodex-latest
+        token: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Build and push arcanecodex image
       uses: docker/build-push-action@v5
       with:
-        context: ./services/arcanecodex
-        file: ./services/arcanecodex/Dockerfile.prod
+        context: ./arcanecodex-latest
+        file: ./arcanecodex-latest/Dockerfile.prod
         push: true
         platforms: linux/arm64
         tags: ghcr.io/kungfusaini/arcanecodex:latest
