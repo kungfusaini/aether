@@ -93,11 +93,19 @@ jobs:
           # Create network if it doesn't exist
           docker network create aether-network 2>/dev/null || true
           
-          # Pull latest images (Docker only pulls what changed)
-          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose -f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml pull
+          # Pull new images
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} \
+          docker compose -f docker-compose.yml \
+                        -f docker-compose-prod.yml \
+                        -f docker-compose-mailcow.yml \
+                        pull
           
-          # Deploy services (only recreates containers if images changed)
-          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose -f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml up -d
+          # Rolling update (no "down", no "up --force-recreate")
+          COMPOSE_FILES="-f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml"
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose $COMPOSE_FILES up -d --no-deps --scale gateway=1 gateway
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose $COMPOSE_FILES up -d --no-deps --scale vulkan=1 vulkan
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose $COMPOSE_FILES up -d --no-deps --scale sumeetsaini_com=1 sumeetsaini_com
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} docker compose $COMPOSE_FILES up -d --no-deps --scale arcanecodex=1 arcanecodex
           
           # Clean up old images
           docker image prune -f
