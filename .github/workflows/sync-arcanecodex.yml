@@ -1,0 +1,26 @@
+name: Sync arcanecodex
+
+on:
+  workflow_run:
+    workflows: ["Sync to Aether"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: 'recursive'
+          
+      - name: Update arcanecodex submodule
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git submodule update --remote services/arcanecodex
+          git add services/arcanecodex
+          git commit -m "Auto-sync arcanecodex" || exit 0
+          git push
