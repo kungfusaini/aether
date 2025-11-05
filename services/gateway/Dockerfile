@@ -1,10 +1,10 @@
 FROM nginx:stable-alpine
 
-# Copy main nginx configuration
+# Copy main nginx configuration (will be overridden by volume mount)
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create directory for site configurations
-RUN mkdir -p /etc/nginx/conf.d
+# Copy all configuration files
+COPY conf.d/ /etc/nginx/conf.d/
 
-# Default configuration will be mounted via volume
+# Configuration will be mounted via volume
 CMD ["nginx", "-g", "daemon off;"]

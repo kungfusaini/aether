@@ -27,6 +27,9 @@ services:
     build:
       context: ./services/gateway
       dockerfile: Dockerfile
+    volumes:
+      - ./services/gateway/nginx-prod.conf:/etc/nginx/nginx.conf:ro
+      - ./services/gateway/conf.d:/etc/nginx/conf.d:ro
     ports:
       - "80:80"
       - "443:443"

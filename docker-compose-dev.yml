@@ -33,15 +33,15 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./services/arcanecodex:/src
-      - /src/themes/PaperMod/.git
     ports:
       - "1313:1313"
-    environment:
-      - HUGO_ENV=development
-      - HUGO_BASEURL=http://arcanecodex.localhost/
-      - HUGO_ENABLE_ROBOTS=false
+
+
       
   gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
     volumes:
       - ./services/gateway/nginx-dev.conf:/etc/nginx/nginx.conf:ro
       - ./services/gateway/conf.d:/etc/nginx/conf.d:ro
