@@ -51,6 +51,15 @@ jobs:
         platforms: linux/arm64
         tags: ghcr.io/kungfusaini/gateway:latest
 
+    - name: Build and push arcanecodex image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/arcanecodex
+        file: ./services/arcanecodex/Dockerfile.prod
+        push: true
+        platforms: linux/arm64
+        tags: ghcr.io/kungfusaini/arcanecodex:latest
+
     - name: Sync compose files to AETHER
       uses: appleboy/scp-action@v0.1.7
       with:
