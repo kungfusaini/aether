@@ -1,10 +1,8 @@
 name: Sync arcanecodex
 
 on:
-  workflow_run:
-    workflows: ["Sync to Aether"]
-    types: [completed]
-    branches: [main]
+  repository_dispatch:
+    types: [arcanecodex-updated]
 
 jobs:
   sync:
