@@ -59,6 +59,7 @@ jobs:
         repository: kungfusaini/arcane-codex
         path: ./arcanecodex-latest
         token: ${{ secrets.GITHUB_TOKEN }}
+        submodules: recursive
 
     - name: Build and push arcanecodex image
       uses: docker/build-push-action@v5
