@@ -4,3 +4,6 @@
 [submodule "services/vulkan"]
 	path = services/vulkan
 	url = git@github.com:kungfusaini/vulkan.git
+[submodule "services/arcanecodex"]
+	path = services/arcanecodex
+	url = git@github.com:kungfusaini/arcane-codex.git
