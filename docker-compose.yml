@@ -19,6 +19,10 @@ services:
     restart: unless-stopped
     container_name: vulkan
     
+  arcanecodex:
+    restart: unless-stopped
+    container_name: arcanecodex
+    
   gateway:
     build:
       context: ./services/gateway
@@ -29,6 +33,7 @@ services:
     depends_on:
       - sumeetsaini_com
       - vulkan
+      - arcanecodex
     restart: unless-stopped
     container_name: gateway_nginx
 

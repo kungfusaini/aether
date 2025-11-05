@@ -27,6 +27,20 @@ services:
       - ETHEREAL_HOST=smtp.ethereal.email
       - ETHEREAL_PORT=587
       
+  arcanecodex:
+    build:
+      context: ./services/arcanecodex
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./services/arcanecodex:/src
+      - /src/themes/PaperMod/.git
+    ports:
+      - "1313:1313"
+    environment:
+      - HUGO_ENV=development
+      - HUGO_BASEURL=http://arcanecodex.localhost/
+      - HUGO_ENABLE_ROBOTS=false
+      
   gateway:
     volumes:
       - ./services/gateway/nginx-dev.conf:/etc/nginx/nginx.conf:ro

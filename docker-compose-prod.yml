@@ -17,6 +17,18 @@ services:
       - aether-network
       - mailcowdockerized_mailcow-network
       
+  arcanecodex:
+    build:
+      context: ./services/arcanecodex
+      dockerfile: Dockerfile.prod
+    image: ghcr.io/kungfusaini/arcanecodex:latest
+    environment:
+      - HUGO_ENV=production
+      - HUGO_BASEURL=https://arcanecodex.dev/
+      - HUGO_ENABLE_ROBOTS=true
+    networks:
+      - aether-network
+      
   gateway:
     image: ghcr.io/kungfusaini/gateway:latest
     volumes:
