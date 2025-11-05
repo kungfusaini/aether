@@ -3,6 +3,8 @@ name: Deploy to Aether
 on:
   push:
     branches: [ main ]
+  repository_dispatch:
+    types: [arcanecodex-updated]
 
 jobs:
   build-and-deploy:
