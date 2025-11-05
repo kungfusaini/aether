@@ -93,5 +93,8 @@ jobs:
           # Restart gateway to refresh DNS resolution
           docker restart gateway_nginx
           
+          # Restart arcanecodex to use updated content
+          docker restart arcanecodex
+          
           # Clean up old images
           docker image prune -f
