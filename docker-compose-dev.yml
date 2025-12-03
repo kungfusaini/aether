@@ -7,7 +7,7 @@ services:
       - "8080:8080"
     environment:
       - NODE_ENV=dev
-      
+
   vulkan:
     build:
       context: ./services/vulkan
@@ -26,7 +26,7 @@ services:
       - CONTACT_EMAIL=dev-test@example.com
       - ETHEREAL_HOST=smtp.ethereal.email
       - ETHEREAL_PORT=587
-      
+
   arcanecodex:
     build:
       context: ./services/arcanecodex
@@ -35,9 +35,9 @@ services:
       - ./services/arcanecodex:/src
     ports:
       - "1313:1313"
+    environment:
+      - HUGO_ENV=development
 
-
-      
   gateway:
     build:
       context: ./services/gateway
@@ -47,3 +47,7 @@ services:
       - ./services/gateway/conf.d:/etc/nginx/conf.d:ro
     ports:
       - "80:80"
+    depends_on:
+      - sumeetsaini_com
+      - vulkan
+      - arcanecodex
