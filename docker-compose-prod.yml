@@ -24,8 +24,6 @@ services:
 
   gateway:
     image: ghcr.io/kungfusaini/gateway:latest
-    environment:
-      - ENVIRONMENT=prod
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
