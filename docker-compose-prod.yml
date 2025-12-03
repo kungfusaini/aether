@@ -1,7 +1,7 @@
 services:
   sumeetsaini_com:
     image: ghcr.io/kungfusaini/sumeetsaini_com:latest
-    
+
   vulkan:
     image: ghcr.io/kungfusaini/vulkan:latest
     environment:
@@ -12,7 +12,7 @@ services:
     networks:
       - aether-network
       - mailcowdockerized_mailcow-network
-      
+
   arcanecodex:
     image: ghcr.io/kungfusaini/arcanecodex:latest
     environment:
@@ -21,13 +21,17 @@ services:
       - HUGO_ENABLE_ROBOTS=true
     networks:
       - aether-network
-      
+
   gateway:
     image: ghcr.io/kungfusaini/gateway:latest
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - ./services/gateway/nginx-prod.conf:/etc/nginx/nginx.conf:ro
       - ./services/gateway/conf.d:/etc/nginx/conf.d:ro
     networks:
       - aether-network
       - mailcowdockerized_mailcow-network
+    depends_on:
+      - sumeetsaini_com
+      - vulkan
+      - arcanecodex
+      - plausible
