@@ -15,10 +15,6 @@ services:
 
   arcanecodex:
     image: ghcr.io/kungfusaini/arcanecodex:latest
-    environment:
-      - HUGO_ENV=production
-      - HUGO_BASEURL=https://arcanecodex.dev/
-      - HUGO_ENABLE_ROBOTS=true
     networks:
       - aether-network
 
