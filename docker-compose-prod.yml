@@ -4,6 +4,8 @@ services:
 
   vulkan:
     image: ghcr.io/kungfusaini/vulkan:latest
+    volumes:
+      - ./services/vulkan/data:/app/data
     environment:
       - NODE_ENV=prod
       - MAIL_ENABLED=true
