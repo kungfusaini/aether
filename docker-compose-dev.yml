@@ -26,6 +26,7 @@ services:
       - CONTACT_EMAIL=dev-test@example.com
       - ETHEREAL_HOST=smtp.ethereal.email
       - ETHEREAL_PORT=587
+      - WELL_API_KEY=dev
 
   arcanecodex:
     build:

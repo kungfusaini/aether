@@ -96,6 +96,7 @@ jobs:
           # Pull new images
           CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} \
           PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }} \
+          WELL_API_KEY=${{ secrets.WELL_API_KEY }} \
           docker compose -f docker-compose.yml \
                         -f docker-compose-prod.yml \
                         -f docker-compose-mailcow.yml \
@@ -105,6 +106,7 @@ jobs:
           # Rolling update (no "down", no "up --force-recreate")
           COMPOSE_FILES="-f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml -f docker-compose-plausible.yml"
           export CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }}
+          export WELL_API_KEY=${{ secrets.WELL_API_KEY }}
           export PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }}
           export PLAUSIBLE_BASE_URL=https://stats.sumeetsaini.com
           export PLAUSIBLE_DISABLE_REGISTRATION=invite_only

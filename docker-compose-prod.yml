@@ -9,6 +9,7 @@ services:
       - MAIL_ENABLED=true
       - MAILCOW_HOST=mailcowdockerized-postfix-mailcow-1
       - CONTACT_EMAIL=${CONTACT_EMAIL}
+      - WELL_API_KEY=${WELL_API_KEY}
     networks:
       - aether-network
       - mailcowdockerized_mailcow-network
