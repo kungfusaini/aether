@@ -16,6 +16,7 @@ services:
       - ./services/vulkan:/app
       - ./services/vulkan/data:/app/data
       - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "3000:3000"
     environment:
