@@ -24,6 +24,7 @@ services:
 
   bucketbot:
     image: ghcr.io/kungfusaini/bucketbot:latest
+    container_name: bucketbot
     environment:
       - BUCKETBOT_TOKEN=${BUCKETBOT_TOKEN}
       - WELL_API_KEY=${WELL_API_KEY}
