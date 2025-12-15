@@ -21,6 +21,15 @@ services:
     networks:
       - aether-network
 
+  bucketbot:
+    image: ghcr.io/kungfusaini/bucketbot:latest
+    environment:
+      - BUCKETBOT_TOKEN=${BUCKETBOT_TOKEN}
+      - WELL_API_KEY=${WELL_API_KEY}
+    networks:
+      - aether-network
+    restart: unless-stopped
+
   gateway:
     image: ghcr.io/kungfusaini/gateway:latest
     volumes:

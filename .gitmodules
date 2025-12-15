@@ -7,3 +7,6 @@
 [submodule "services/arcanecodex"]
 	path = services/arcanecodex
 	url = git@github.com:kungfusaini/arcane-codex.git
+[submodule "services/bucketbot"]
+	path = services/bucketbot
+	url = git@github.com:kungfusaini/bucketbot.git

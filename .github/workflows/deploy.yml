@@ -70,6 +70,15 @@ jobs:
         platforms: linux/arm64
         tags: ghcr.io/kungfusaini/arcanecodex:latest
 
+    - name: Build and push bucketbot image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/bucketbot
+        file: ./services/bucketbot/Dockerfile.prod
+        push: true
+        platforms: linux/arm64
+        tags: ghcr.io/kungfusaini/bucketbot:latest
+
     - name: Sync compose files to AETHER
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -97,6 +106,7 @@ jobs:
           CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} \
           PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }} \
           WELL_API_KEY=${{ secrets.WELL_API_KEY }} \
+          BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }} \
           docker compose -f docker-compose.yml \
                         -f docker-compose-prod.yml \
                         -f docker-compose-mailcow.yml \
@@ -108,6 +118,7 @@ jobs:
           export CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }}
           export WELL_API_KEY=${{ secrets.WELL_API_KEY }}
           export PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }}
+          export BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }}
           export PLAUSIBLE_BASE_URL=https://stats.sumeetsaini.com
           export PLAUSIBLE_DISABLE_REGISTRATION=invite_only
           docker compose $COMPOSE_FILES up -d --no-deps --scale plausible_db=1 plausible_db
@@ -117,6 +128,7 @@ jobs:
           docker compose $COMPOSE_FILES up -d --no-deps --scale vulkan=1 vulkan
           docker compose $COMPOSE_FILES up -d --no-deps --scale sumeetsaini_com=1 sumeetsaini_com
           docker compose $COMPOSE_FILES up -d --no-deps --scale arcanecodex=1 arcanecodex
+          docker compose $COMPOSE_FILES up -d --no-deps --scale bucketbot=1 bucketbot
           
           # Clean up old images
           docker image prune -f
