@@ -8,6 +8,7 @@ services:
       - ./services/vulkan/data:/app/data
       - vulkan_data_backup:/app/data-backup
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /run/secrets:/run/secrets
     environment:
       - NODE_ENV=prod
       - MAIL_ENABLED=true
