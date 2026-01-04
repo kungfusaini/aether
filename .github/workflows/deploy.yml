@@ -99,12 +99,6 @@ jobs:
         script: |
           cd ${{ secrets.AETHER_PATH }}
           
-          # Setup backup SSH key from secrets
-          cat > services/vulkan/secrets/backup_ssh_key << 'EOF'
-          ${{ secrets.VULKAN_BACKUP_SSH_KEY }}
-          EOF
-          chmod 600 services/vulkan/secrets/backup_ssh_key
-          
           # Create network if it doesn't exist
           docker network create aether-network 2>/dev/null || true
           
@@ -113,6 +107,7 @@ jobs:
           PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }} \
           WELL_API_KEY=${{ secrets.WELL_API_KEY }} \
           BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }} \
+          BACKUP_SSH_KEY="${{ secrets.VULKAN_BACKUP_SSH_KEY }}" \
           docker compose -f docker-compose.yml \
                         -f docker-compose-prod.yml \
                         -f docker-compose-mailcow.yml \
@@ -125,6 +120,7 @@ jobs:
           export WELL_API_KEY=${{ secrets.WELL_API_KEY }}
           export PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }}
           export BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }}
+          export BACKUP_SSH_KEY="${{ secrets.VULKAN_BACKUP_SSH_KEY }}"
           export PLAUSIBLE_BASE_URL=https://stats.sumeetsaini.com
           export PLAUSIBLE_DISABLE_REGISTRATION=invite_only
           docker compose $COMPOSE_FILES up -d --no-deps --scale plausible_db=1 plausible_db

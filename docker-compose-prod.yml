@@ -17,9 +17,7 @@ services:
       - BACKUP_REPO_URL=git@github.com:kungfusaini/vulkan-data.git
       - GIT_AUTHOR_NAME=Vulkan Backup Bot
       - GIT_AUTHOR_EMAIL=backup@vulkan.sumeetsaini.com
-      - GIT_SSH_COMMAND="ssh -i /run/secrets/backup_ssh_key -o StrictHostKeyChecking=no"
-    secrets:
-      - backup_ssh_key
+      - BACKUP_SSH_KEY=${BACKUP_SSH_KEY}
     networks:
       - aether-network
       - mailcowdockerized_mailcow-network
@@ -61,6 +59,4 @@ networks:
 volumes:
   vulkan_data_backup:
 
-secrets:
-  backup_ssh_key:
-    file: ./services/vulkan/secrets/backup_ssh_key
+
