@@ -99,6 +99,12 @@ jobs:
         script: |
           cd ${{ secrets.AETHER_PATH }}
           
+          # Setup backup SSH key from secrets
+          cat > services/vulkan/secrets/backup_ssh_key << 'EOF'
+          ${{ secrets.VULKAN_BACKUP_SSH_KEY }}
+          EOF
+          chmod 600 services/vulkan/secrets/backup_ssh_key
+          
           # Create network if it doesn't exist
           docker network create aether-network 2>/dev/null || true
           
