@@ -15,10 +15,10 @@ services:
       - MAILCOW_HOST=mailcowdockerized-postfix-mailcow-1
       - CONTACT_EMAIL=${CONTACT_EMAIL}
       - WELL_API_KEY=${WELL_API_KEY}
-      - BACKUP_REPO_URL=git@github.com:kungfusaini/vulkan-data.git
+      - BACKUP_REPO_URL=https://github.com/kungfusaini/vulkan-data.git
       - GIT_AUTHOR_NAME=Vulkan Backup Bot
       - GIT_AUTHOR_EMAIL=backup@vulkan.sumeetsaini.com
-      - VULKAN_BACKUP_SSH_KEY=${VULKAN_BACKUP_SSH_KEY}
+      - VULKAN_GIT_TOKEN=${VULKAN_GIT_TOKEN}
     networks:
       - aether-network
       - mailcowdockerized_mailcow-network

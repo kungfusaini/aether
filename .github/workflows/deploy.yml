@@ -107,7 +107,7 @@ jobs:
           PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }} \
           WELL_API_KEY=${{ secrets.WELL_API_KEY }} \
           BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }} \
-          VULKAN_BACKUP_SSH_KEY="${{ secrets.VULKAN_BACKUP_SSH_KEY }}" \
+          VULKAN_GIT_TOKEN="${{ secrets.VULKAN_GIT_TOKEN }}" \
           docker compose -f docker-compose.yml \
                         -f docker-compose-prod.yml \
                         -f docker-compose-mailcow.yml \
@@ -120,10 +120,10 @@ jobs:
           export WELL_API_KEY=${{ secrets.WELL_API_KEY }}
           export PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }}
           export BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }}
-          export BACKUP_SSH_KEY="${{ secrets.VULKAN_BACKUP_SSH_KEY }}"
+          export VULKAN_GIT_TOKEN="${{ secrets.VULKAN_GIT_TOKEN }}"
           export PLAUSIBLE_BASE_URL=https://stats.sumeetsaini.com
           export PLAUSIBLE_DISABLE_REGISTRATION=invite_only
-          export VULKAN_BACKUP_SSH_KEY=${{ secrets.VULKAN_BACKUP_SSH_KEY }}
+          export VULKAN_GIT_TOKEN=${{ secrets.VULKAN_GIT_TOKEN }}
           docker compose $COMPOSE_FILES up -d --no-deps --scale plausible_db=1 plausible_db
           docker compose $COMPOSE_FILES up -d --no-deps --scale plausible_events_db=1 plausible_events_db
           docker compose $COMPOSE_FILES up -d --no-deps --scale plausible=1 plausible
