@@ -79,6 +79,15 @@ jobs:
         platforms: linux/arm64
         tags: ghcr.io/kungfusaini/bucketbot:latest
 
+    - name: Build and push goblinbot image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/goblinbot
+        file: ./services/goblinbot/Dockerfile.prod
+        push: true
+        platforms: linux/arm64
+        tags: ghcr.io/kungfusaini/goblinbot:latest
+
     - name: Sync compose files to AETHER
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -107,6 +116,7 @@ jobs:
           PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }} \
           WELL_API_KEY=${{ secrets.WELL_API_KEY }} \
           BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }} \
+          GOBLINBOT_TOKEN=${{ secrets.GOBLINBOT_TOKEN }} \
           VULKAN_GIT_TOKEN="${{ secrets.VULKAN_GIT_TOKEN }}" \
           docker compose -f docker-compose.yml \
                         -f docker-compose-prod.yml \
@@ -120,6 +130,7 @@ jobs:
           export WELL_API_KEY=${{ secrets.WELL_API_KEY }}
           export PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }}
           export BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }}
+          export GOBLINBOT_TOKEN=${{ secrets.GOBLINBOT_TOKEN }}
           export VULKAN_GIT_TOKEN="${{ secrets.VULKAN_GIT_TOKEN }}"
           export PLAUSIBLE_BASE_URL=https://stats.sumeetsaini.com
           export PLAUSIBLE_DISABLE_REGISTRATION=invite_only
@@ -132,6 +143,7 @@ jobs:
           docker compose $COMPOSE_FILES up -d --no-deps --scale sumeetsaini_com=1 sumeetsaini_com
           docker compose $COMPOSE_FILES up -d --no-deps --scale arcanecodex=1 arcanecodex
           docker compose $COMPOSE_FILES up -d --no-deps --scale bucketbot=1 bucketbot
+          docker compose $COMPOSE_FILES up -d --no-deps --scale goblinbot=1 goblinbot
           
           # Clean up old images
           docker image prune -f

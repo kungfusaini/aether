@@ -10,3 +10,6 @@
 [submodule "services/bucketbot"]
 	path = services/bucketbot
 	url = git@github.com:kungfusaini/bucketbot.git
+[submodule "services/goblinbot"]
+	path = services/goblinbot
+	url = git@github.com:kungfusaini/goblinbot.git

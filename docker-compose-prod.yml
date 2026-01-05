@@ -38,6 +38,16 @@ services:
       - aether-network
     restart: unless-stopped
 
+  goblinbot:
+    image: ghcr.io/kungfusaini/goblinbot:latest
+    container_name: goblinbot
+    environment:
+      - GOBLINBOT_TOKEN=${GOBLINBOT_TOKEN}
+      - WELL_API_KEY=${WELL_API_KEY}
+    networks:
+      - aether-network
+    restart: unless-stopped
+
   gateway:
     image: ghcr.io/kungfusaini/gateway:latest
     volumes:
