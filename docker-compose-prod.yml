@@ -34,6 +34,7 @@ services:
     environment:
       - BUCKETBOT_TOKEN=${BUCKETBOT_TOKEN}
       - WELL_API_KEY=${WELL_API_KEY}
+      - TELEGRAM_ID=${TELEGRAM_ID}
     networks:
       - aether-network
     restart: unless-stopped
@@ -44,6 +45,7 @@ services:
     environment:
       - GOBLINBOT_TOKEN=${GOBLINBOT_TOKEN}
       - WELL_API_KEY=${WELL_API_KEY}
+      - TELEGRAM_ID=${TELEGRAM_ID}
     networks:
       - aether-network
     restart: unless-stopped
