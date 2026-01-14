@@ -13,3 +13,6 @@
 [submodule "services/goblinbot"]
 	path = services/goblinbot
 	url = git@github.com:kungfusaini/goblinbot.git
+[submodule "services/ao3"]
+	path = services/ao3
+	url = git@github.com:kungfusaini/ashlyn-of-our-own.git

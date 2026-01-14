@@ -28,6 +28,11 @@ services:
     networks:
       - aether-network
 
+  ao3:
+    image: ghcr.io/kungfusaini/ao3:latest
+    networks:
+      - aether-network
+
   bucketbot:
     image: ghcr.io/kungfusaini/bucketbot:latest
     container_name: bucketbot
@@ -61,6 +66,7 @@ services:
       - sumeetsaini_com
       - vulkan
       - arcanecodex
+      - ao3
       - plausible
 
 networks:

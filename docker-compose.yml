@@ -23,6 +23,13 @@ services:
     restart: unless-stopped
     container_name: arcanecodex
     
+  ao3:
+    build: 
+      context: ./services/ao3
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    container_name: ao3
+    
   gateway:
     build:
       context: ./services/gateway
@@ -34,6 +41,7 @@ services:
       - sumeetsaini_com
       - vulkan
       - arcanecodex
+      - ao3
     restart: unless-stopped
     container_name: gateway_nginx
 
