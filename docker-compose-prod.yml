@@ -33,6 +33,11 @@ services:
     networks:
       - aether-network
 
+  reliqstudios:
+    image: ghcr.io/kungfusaini/reliqstudios:latest
+    networks:
+      - aether-network
+
   bucketbot:
     image: ghcr.io/kungfusaini/bucketbot:latest
     container_name: bucketbot
@@ -67,6 +72,7 @@ services:
       - vulkan
       - arcanecodex
       - ao3
+      - reliqstudios
       - plausible
 
 networks:

@@ -41,6 +41,17 @@ services:
     environment:
       - HUGO_ENV=development
 
+  reliqstudios:
+    build:
+      context: ./services/reliq/reliqstudios
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./services/reliq/reliqstudios:/src
+    ports:
+      - "1314:1314"
+    environment:
+      - HUGO_ENV=development
+
   gateway:
     build:
       context: ./services/gateway
@@ -54,3 +65,4 @@ services:
       - sumeetsaini_com
       - vulkan
       - arcanecodex
+      - reliqstudios

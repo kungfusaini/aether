@@ -30,6 +30,10 @@ services:
     restart: unless-stopped
     container_name: ao3
     
+  reliqstudios:
+    restart: unless-stopped
+    container_name: reliqstudios
+    
   gateway:
     build:
       context: ./services/gateway
@@ -42,6 +46,7 @@ services:
       - vulkan
       - arcanecodex
       - ao3
+      - reliqstudios
     restart: unless-stopped
     container_name: gateway_nginx
 

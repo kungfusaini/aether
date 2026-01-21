@@ -16,3 +16,6 @@
 [submodule "services/ao3"]
 	path = services/ao3
 	url = git@github.com:kungfusaini/ashlyn-of-our-own.git
+[submodule "services/reliq/reliqstudios"]
+	path = services/reliq/reliqstudios
+	url = git@github.com:kungfusaini/reliqstudios.git
