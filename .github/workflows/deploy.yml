@@ -131,7 +131,8 @@ jobs:
           docker network create aether-network 2>/dev/null || true
           
           # Pull new images
-          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }} \
+          MAIN_EMAIL=${{ secrets.MAIN_EMAIL }} \
+          RELIQ_STUDIOS_EMAIL=${{ secrets.RELIQ_STUDIOS_EMAIL }} \
           PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }} \
           WELL_API_KEY=${{ secrets.WELL_API_KEY }} \
           BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }} \
@@ -146,7 +147,8 @@ jobs:
 
           # Rolling update (no "down", no "up --force-recreate")
           COMPOSE_FILES="-f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml -f docker-compose-plausible.yml"
-          export CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }}
+          export MAIN_EMAIL=${{ secrets.MAIN_EMAIL }}
+          export RELIQ_STUDIOS_EMAIL=${{ secrets.RELIQ_STUDIOS_EMAIL }}
           export WELL_API_KEY=${{ secrets.WELL_API_KEY }}
           export PLAUSIBLE_SECRET_KEY_BASE=${{ secrets.PLAUSIBLE_SECRET_KEY_BASE }}
           export BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }}

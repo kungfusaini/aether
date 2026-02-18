@@ -13,7 +13,8 @@ services:
       - NODE_ENV=prod
       - MAIL_ENABLED=true
       - MAILCOW_HOST=mailcowdockerized-postfix-mailcow-1
-      - CONTACT_EMAIL=${CONTACT_EMAIL}
+      - MAIN_EMAIL=${MAIN_EMAIL}
+      - RELIQ_STUDIOS_EMAIL=${RELIQ_STUDIOS_EMAIL}
       - WELL_API_KEY=${WELL_API_KEY}
       - BACKUP_REPO_URL=https://github.com/kungfusaini/vulkan-data.git
       - GIT_AUTHOR_NAME=Vulkan Backup Bot

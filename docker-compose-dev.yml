@@ -25,7 +25,8 @@ services:
       - HOST=0.0.0.0
       - FROM_EMAIL=vulkan@sumeetsaini.com
       - MAIL_ENABLED=true
-      - CONTACT_EMAIL=dev-test@example.com
+      - MAIN_EMAIL=dev-test@example.com
+      - RELIQ_STUDIOS_EMAIL=dev-test@example.com
       - ETHEREAL_HOST=smtp.ethereal.email
       - ETHEREAL_PORT=587
       - WELL_API_KEY=dev
