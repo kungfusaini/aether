@@ -138,6 +138,8 @@ jobs:
           BUCKETBOT_TOKEN=${{ secrets.BUCKETBOT_TOKEN }} \
           GOBLINBOT_TOKEN=${{ secrets.GOBLINBOT_TOKEN }} \
           VULKAN_GIT_TOKEN="${{ secrets.VULKAN_GIT_TOKEN }}" \
+          PROJECTS_REPO_URL="${{ secrets.PROJECTS_REPO_URL }}" \
+          PROJECTS_WEBHOOK_SECRET="${{ secrets.PROJECTS_WEBHOOK_SECRET }}" \
           TELEGRAM_ID="${{ secrets.TELEGRAM_ID }}" \
           docker compose -f docker-compose.yml \
                         -f docker-compose-prod.yml \
@@ -157,6 +159,8 @@ jobs:
           export PLAUSIBLE_BASE_URL=https://stats.sumeetsaini.com
           export PLAUSIBLE_DISABLE_REGISTRATION=invite_only
           export VULKAN_GIT_TOKEN=${{ secrets.VULKAN_GIT_TOKEN }}
+          export PROJECTS_REPO_URL=${{ secrets.PROJECTS_REPO_URL }}
+          export PROJECTS_WEBHOOK_SECRET=${{ secrets.PROJECTS_WEBHOOK_SECRET }}
           export TELEGRAM_ID=${{ secrets.TELEGRAM_ID }}
           docker compose $COMPOSE_FILES up -d --no-deps --scale plausible_db=1 plausible_db
           docker compose $COMPOSE_FILES up -d --no-deps --scale plausible_events_db=1 plausible_events_db

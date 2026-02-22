@@ -6,6 +6,7 @@ services:
     image: ghcr.io/kungfusaini/vulkan:latest
     volumes:
       - ./services/vulkan/data:/app/data
+      - vulkan_projects:/app/projects
       - vulkan_data_backup:/app/data-backup
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /run/secrets:/run/secrets
@@ -20,6 +21,9 @@ services:
       - GIT_AUTHOR_NAME=Vulkan Backup Bot
       - GIT_AUTHOR_EMAIL=backup@vulkan.sumeetsaini.com
       - VULKAN_GIT_TOKEN=${VULKAN_GIT_TOKEN}
+      - PROJECTS_REPO_URL=${PROJECTS_REPO_URL}
+      - PROJECTS_WEBHOOK_SECRET=${PROJECTS_WEBHOOK_SECRET}
+      - PROJECTS_BASE_URL=https://vulkan.sumeetsaini.com
     networks:
       - aether-network
       - mailcowdockerized_mailcow-network
@@ -84,5 +88,6 @@ networks:
 
 volumes:
   vulkan_data_backup:
+  vulkan_projects:
 
 

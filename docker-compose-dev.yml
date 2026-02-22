@@ -15,6 +15,7 @@ services:
     volumes:
       - ./services/vulkan:/app
       - ./services/vulkan/data:/app/data
+      - ./services/vulkan/projects:/app/projects
       - /app/node_modules
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
@@ -30,6 +31,8 @@ services:
       - ETHEREAL_HOST=smtp.ethereal.email
       - ETHEREAL_PORT=587
       - WELL_API_KEY=dev
+      - PROJECTS_REPO_URL=https://github.com/kungfusaini/project-writeups.git
+      - PROJECTS_BASE_URL=http://localhost:3000
 
   arcanecodex:
     build:
