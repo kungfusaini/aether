@@ -19,3 +19,6 @@
 [submodule "services/reliq/reliqstudios"]
 	path = services/reliq/reliqstudios
 	url = git@github.com:kungfusaini/reliqstudios.git
+[submodule "services/reliq/reliq.digital"]
+	path = services/reliq/reliq.digital
+	url = git@github.com:kungfusaini/reliq.digital.git
