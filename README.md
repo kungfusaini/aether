@@ -4,12 +4,17 @@ Complete Docker Compose orchestration for web applications with integrated servi
 
 ## Architecture
 
-- **sumeetsaini_com**: [Frontend](https://github.com/kungfusaini/sumeetsaini_com) web application
-- **vulkan**: [Backend](https://github.com/kungfusaini/vulkan) API service
-- **arcanecodex**: [Hugo](https://github.com/kungfusaini/arcane-codex) static site
-- **gateway**: Nginx reverse proxy with SSL termination
+- **sumeetsaini_com**: [Frontend](https://github.com/kungfusaini/sumeetsaini_com) web application (sumeetsaini.com)
+- **vulkan**: [Backend](https://github.com/kungfusaini/vulkan) API service (vulkan.sumeetsaini.com)
+- **arcanecodex**: [Hugo](https://github.com/kungfusaini/arcane-codex) static site (arcanecodex.dev)
+- **gateway**: Nginx reverse proxy with SSL termination (handles all domains)
 - **plausible**: Self-hosted analytics (optional in dev, enabled in production)
 - **mailcow**: Email service (production only)
+- **ao3**: AO3 archive reader (ashlynofourown.sumeetsaini.com)
+- **reliqstudios**: Business website (reliqstudios.com)
+- **reliqdigital**: Digital services site (reliq.digital)
+- **bucketbot**: Automated content bucket management bot
+- **goblinbot**: Telegram bot integration service
 
 ## Development
 
