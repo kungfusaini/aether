@@ -48,6 +48,11 @@ services:
     networks:
       - aether-network
 
+  reliqlabs:
+    image: ghcr.io/kungfusaini/reliqlabs:latest
+    networks:
+      - aether-network
+
   bucketbot:
     image: ghcr.io/kungfusaini/bucketbot:latest
     container_name: bucketbot

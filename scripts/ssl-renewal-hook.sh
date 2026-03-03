@@ -10,7 +10,8 @@ if [[ "$RENEWED_LINEAGE" == *"/sumeetsaini.com"* ]] || \
    [[ "$RENEWED_LINEAGE" == *"/ashlynofourown.sumeetsaini.com"* ]] || \
    [[ "$RENEWED_LINEAGE" == *"/reliqstudios.com"* ]] || \
    [[ "$RENEWED_LINEAGE" == *"/stats.sumeetsaini.com"* ]] || \
-   [[ "$RENEWED_LINEAGE" == *"/reliq.digital"* ]]; then
+   [[ "$RENEWED_LINEAGE" == *"/reliq.digital"* ]] || \
+   [[ "$RENEWED_LINEAGE" == *"/reliqlabs.com"* ]]; then
     echo "Restarting gateway nginx for renewed SSL certificates..."
     docker restart gateway_nginx || echo "Warning: Could not restart gateway_nginx"
 fi

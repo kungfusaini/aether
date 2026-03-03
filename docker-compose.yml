@@ -52,6 +52,7 @@ services:
       - ao3
       - reliqstudios
       - reliqdigital
+      - reliqlabs
     restart: unless-stopped
     container_name: gateway_nginx
 

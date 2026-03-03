@@ -65,6 +65,17 @@ services:
     ports:
       - "8082:80"
 
+  reliqlabs:
+    build:
+      context: ./services/reliq/reliqlabs
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./services/reliq/reliqlabs:/src
+    ports:
+      - "1315:1314"
+    environment:
+      - HUGO_ENV=development
+
   gateway:
     build:
       context: ./services/gateway
@@ -78,5 +89,7 @@ services:
       - sumeetsaini_com
       - vulkan
       - arcanecodex
+      - ao3
       - reliqstudios
       - reliqdigital
+      - reliqlabs
