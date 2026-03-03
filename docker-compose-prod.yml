@@ -74,6 +74,7 @@ services:
     image: ghcr.io/kungfusaini/gateway:latest
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/letsencrypt:/var/www/letsencrypt:ro
     networks:
       - aether-network
       - mailcowdockerized_mailcow-network
