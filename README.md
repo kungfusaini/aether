@@ -68,9 +68,21 @@ Wildcard certificates managed via Let's Encrypt with automatic renewal.
 
 Follow these steps to add a new domain to the gateway:
 
-#### 1. Create Nginx Configuration
+#### 1. Obtain SSL Certificate (First!)
 
-Create a new config file in `services/gateway/conf.d/prod/` named `<domain>.conf`:
+SSH to your VPS and get the certificate **before** creating nginx config:
+
+```bash
+# Create webroot directory if it doesn't exist (one-time setup)
+sudo mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
+
+# Request SSL certificate
+sudo certbot certonly --webroot --webroot-path /var/www/letsencrypt -d <domain> -d www.<domain>
+```
+
+#### 2. Create Nginx Configuration
+
+Create `services/gateway/conf.d/prod/<domain>.conf`:
 
 ```nginx
 # <domain> - Production (HTTPS)
@@ -78,10 +90,9 @@ Create a new config file in `services/gateway/conf.d/prod/` named `<domain>.conf
 # HTTP to HTTPS redirect with ACME challenge support
 server {
     listen 80;
-    listen [::]:80;  # IPv6 support (required if domain has AAAA record)
+    listen [::]:80;  # IPv6 (required if domain has AAAA record)
     server_name <domain> www.<domain>;
 
-    # ACME challenge for certbot renewal (must come before redirect)
     location /.well-known/acme-challenge/ {
         root /var/www/letsencrypt;
     }
@@ -94,18 +105,16 @@ server {
 # HTTPS server
 server {
     listen 443 ssl http2;
-    listen [::]:443 ssl http2;  # IPv6 HTTPS
+    listen [::]:443 ssl http2;  # IPv6 (required if domain has AAAA record)
     server_name <domain> www.<domain>;
     
-    # security configuration
     include /etc/nginx/conf.d/common/security.conf;
     
-    # SSL certificates (will exist after certbot)
     ssl_certificate /etc/letsencrypt/live/<domain>/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/<domain>/privkey.pem;
 
     location / {
-        proxy_pass http://<your_backend_service_name>_prod;
+        proxy_pass http://<backend_service_name>_prod;
         include /etc/nginx/conf.d/common/proxy-headers.conf;
     }
 
@@ -113,67 +122,52 @@ server {
 }
 ```
 
-**Important**:
-- Replace `<domain>` with your actual domain
-- Replace `<your_backend_service_name>` with the Docker Compose service name (e.g., `sumeetsaini_com`, `vulkan_api`)
-- Add IPv6 `listen [::]:80;` and `listen [::]:443 ssl http2;` if your domain has AAAA DNS record
-- The ACME location block is **required** for automatic SSL renewal
+**Important:**
+- Replace `<domain>` and `<backend_service_name>` with your actual values
+- Add IPv6 `listen [::]:80;` and `listen [::]:443 ssl http2;` if your domain has an AAAA DNS record
+- The ACME location block is required for automatic SSL renewal
 
-#### 2. Add Upstream Definition (if needed)
+#### 3. Add Upstream (if needed)
 
-If your backend is a separate service, ensure it's defined in `services/gateway/conf.d/prod/upstreams.conf`:
+Add to `services/gateway/conf.d/prod/upstreams.conf`:
 
 ```nginx
-upstream <your_backend_service_name>_prod {
+upstream <backend_service_name>_prod {
     server <service_name>:<port>;
 }
 ```
 
-#### 3. Ensure Backend Service Exists
-
-Add your application service to `docker-compose-prod.yml` if it's not already there.
-
-#### 4. Deploy to Production
+#### 4. Deploy
 
 ```bash
-# Commit and push to trigger GitHub Actions deployment
 git add .
-git commit -m "Add <domain> to gateway"
+git commit -m "Add <domain> to gateway with HTTPS"
 git push origin main
 ```
 
-#### 5. Obtain SSL Certificate
+#### 5. Verify
 
-After deployment, SSH to your VPS and run:
-
-```bash
-cd /var/www/containers
-
-# Create webroot directory (only needed once)
-sudo mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
-
-# Request SSL certificate (adjust domains as needed)
-sudo certbot certonly --webroot --webroot-path /var/www/letsencrypt -d <domain> -d www.<domain>
-
-# The deploy hook will automatically restart nginx when certificate renews
-```
-
-#### 6. Verify
+After deployment, on your VPS:
 
 ```bash
-# Test renewal
+# Test renewal works
 sudo certbot renew --dry-run
 
 # Check nginx is running
 docker ps | grep gateway
 ```
 
-### Notes
+### Important Notes
 
-- **IPv6**: If your domain has an AAAA DNS record, nginx must listen on IPv6 (`[::]:80` and `[::]:443`). Otherwise Let's Encrypt's IPv6 validation will fail.
-- **SSL Renewal Hook**: The hook at `/etc/letsencrypt/renewal-hooks/deploy/ssl-renewal-hook.sh` automatically restarts nginx when any gateway certificate renews.
-- **Redundant Crontab**: If you see a crontab entry for `certbot renew`, remove it. The systemd timer (`certbot.timer`) handles automatic renewals.
-- **Webroot Directory**: Must be mounted into the gateway container via `docker-compose-prod.yml` volume: `- /var/www/letsencrypt:/var/www/letsencrypt:ro`
+- **IPv6 Requirement**: If your domain has an AAAA DNS record, you **must** include `listen [::]:80;` and `listen [::]:443 ssl http2;` in your nginx config. Let's Encrypt validates via IPv6 when available, and will fail with "Connection refused" if nginx isn't listening on IPv6.
+- **SSL Renewal Hook**: The script `/etc/letsencrypt/renewal-hooks/deploy/ssl-renewal-hook.sh` automatically restarts the gateway container when any gateway certificate renews. It's automatically synced via the deploy workflow, but you need to manually copy it to the renewal-hooks directory after first deploy:
+  ```bash
+  sudo cp /var/www/containers/scripts/ssl-renewal-hook.sh /etc/letsencrypt/renewal-hooks/deploy/ssl-renewal-hook.sh
+  sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/ssl-renewal-hook.sh
+  ```
+- **Redundant Crontab**: Check for a manual `certbot renew` crontab entry (`crontab -l`). If present, remove it. Automatic renewals are handled by the systemd timer (`certbot.timer`).
+- **Webroot Directory**: Must exist on the host at `/var/www/letsencrypt/` and be mounted into the gateway container via `docker-compose-prod.yml`: `- /var/www/letsencrypt:/var/www/letsencrypt:ro`
+- **Two-Step HTTPS Enablement**: Always add the HTTP-only config first, obtain the SSL certificate, then add the HTTPS server block. Adding HTTPS block before the certificate exists will cause nginx to fail to start.
 
 ## Deployment Pipeline
 
