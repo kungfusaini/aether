@@ -201,7 +201,7 @@ jobs:
           docker compose $COMPOSE_FILES up -d --no-deps --scale ao3=1 ao3
           docker compose $COMPOSE_FILES up -d --no-deps --scale reliqstudios=1 reliqstudios
           docker compose $COMPOSE_FILES up -d --no-deps --scale reliqlabs=1 reliqlabs
-docker compose $COMPOSE_FILES up -d --no-deps --scale reliqdigital=1 reliqdigital
+          docker compose $COMPOSE_FILES up -d --no-deps --scale reliqdigital=1 reliqdigital
           docker compose $COMPOSE_FILES up -d --no-deps --scale card=1 card
            
            # Clean up old images
