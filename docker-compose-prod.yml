@@ -53,6 +53,11 @@ services:
     networks:
       - aether-network
 
+  card:
+    image: ghcr.io/kungfusaini/card.sumeetsaini.com:latest
+    networks:
+      - aether-network
+
   bucketbot:
     image: ghcr.io/kungfusaini/bucketbot:latest
     container_name: bucketbot
@@ -90,6 +95,7 @@ services:
       - ao3
       - reliqstudios
       - reliqdigital
+      - card
       - plausible
 
 networks:

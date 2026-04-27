@@ -25,3 +25,6 @@
 [submodule "services/reliq/reliqlabs"]
 	path = services/reliq/reliqlabs
 	url = git@github.com:kungfusaini/reliqlabs.git
+[submodule "services/card"]
+	path = services/card
+	url = git@github.com:kungfusaini/card.sumeetsaini.com.git

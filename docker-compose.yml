@@ -37,7 +37,14 @@ services:
   reliqdigital:
     restart: unless-stopped
     container_name: reliqdigital
-    
+
+  card:
+    build:
+      context: ./services/card
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: card
+
   gateway:
     build:
       context: ./services/gateway
@@ -53,6 +60,7 @@ services:
       - reliqstudios
       - reliqdigital
       - reliqlabs
+      - card
     restart: unless-stopped
     container_name: gateway_nginx
 
