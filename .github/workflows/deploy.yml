@@ -125,6 +125,15 @@ jobs:
         platforms: linux/arm64
         tags: ghcr.io/kungfusaini/reliqdigital:latest
 
+    - name: Build and push card image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/card
+        file: ./services/card/Dockerfile
+        push: true
+        platforms: linux/arm64
+        tags: ghcr.io/kungfusaini/card.sumeetsaini.com:latest
+
     - name: Sync compose files to AETHER
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -192,7 +201,8 @@ jobs:
           docker compose $COMPOSE_FILES up -d --no-deps --scale ao3=1 ao3
           docker compose $COMPOSE_FILES up -d --no-deps --scale reliqstudios=1 reliqstudios
           docker compose $COMPOSE_FILES up -d --no-deps --scale reliqlabs=1 reliqlabs
-          docker compose $COMPOSE_FILES up -d --no-deps --scale reliqdigital=1 reliqdigital
-          
-          # Clean up old images
+docker compose $COMPOSE_FILES up -d --no-deps --scale reliqdigital=1 reliqdigital
+          docker compose $COMPOSE_FILES up -d --no-deps --scale card=1 card
+           
+           # Clean up old images
           docker image prune -f
