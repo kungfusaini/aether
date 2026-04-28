@@ -55,6 +55,8 @@ services:
 
   card:
     image: ghcr.io/kungfusaini/card.sumeetsaini.com:latest
+    volumes:
+      - /root/card-credentials.json:/app/credentials.json:ro
     networks:
       - aether-network
 
