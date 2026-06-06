@@ -54,7 +54,7 @@ services:
       - aether-network
 
   babbi_world:
-    image: ghcr.io/kungfusaini/babbi_world:latest
+    image: ghcr.io/kungfusaini/babbi-world:latest
     networks:
       - aether-network
 
