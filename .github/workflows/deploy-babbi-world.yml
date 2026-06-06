@@ -1,0 +1,27 @@
+name: Redeploy babbi.world
+
+# Triggered by kungfusaini/babbi.world's CI after it builds and pushes a new
+# image to ghcr.io/kungfusaini/babbi_world:latest. Pulls the image and rolls
+# the babbi_world container only — does not touch anything else.
+
+on:
+  repository_dispatch:
+    types: [babbi-world-updated]
+  workflow_dispatch:
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Pull and restart babbi_world on AETHER
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AETHER_HOST }}
+          username: ${{ secrets.AETHER_USER }}
+          key: ${{ secrets.AETHER_SSH_KEY }}
+          script: |
+            cd ${{ secrets.AETHER_PATH }}
+            COMPOSE="-f docker-compose.yml -f docker-compose-prod.yml"
+            docker compose $COMPOSE pull babbi_world
+            docker compose $COMPOSE up -d --no-deps --scale babbi_world=1 babbi_world
+            docker image prune -f

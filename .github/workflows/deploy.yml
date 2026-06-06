@@ -134,15 +134,6 @@ jobs:
         platforms: linux/arm64
         tags: ghcr.io/kungfusaini/card.sumeetsaini.com:latest
 
-    - name: Build and push babbi_world image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./services/babbi_world
-        file: ./services/babbi_world/Dockerfile.prod
-        push: true
-        platforms: linux/arm64
-        tags: ghcr.io/kungfusaini/babbi_world:latest
-
     - name: Sync compose files to AETHER
       uses: appleboy/scp-action@v0.1.7
       with:
