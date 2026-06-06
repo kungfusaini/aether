@@ -53,6 +53,11 @@ services:
     networks:
       - aether-network
 
+  babbi_world:
+    image: ghcr.io/kungfusaini/babbi_world:latest
+    networks:
+      - aether-network
+
   card:
     image: ghcr.io/kungfusaini/card.sumeetsaini.com:latest
     volumes:
@@ -97,6 +102,7 @@ services:
       - ao3
       - reliqstudios
       - reliqdigital
+      - babbi_world
       - card
       - plausible
 
