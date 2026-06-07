@@ -19,9 +19,11 @@ jobs:
           host: ${{ secrets.AETHER_HOST }}
           username: ${{ secrets.AETHER_USER }}
           key: ${{ secrets.AETHER_SSH_KEY }}
+          script_stop: true
           script: |
+            set -e
             cd ${{ secrets.AETHER_PATH }}
-            COMPOSE="-f docker-compose.yml -f docker-compose-prod.yml"
+            COMPOSE="-f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-plausible.yml"
             docker compose $COMPOSE pull babbi_world
             docker compose $COMPOSE up -d --no-deps --scale babbi_world=1 babbi_world
             docker image prune -f
