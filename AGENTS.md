@@ -35,6 +35,8 @@
 - Configuration in separate config.js files
 - State management in dedicated state files
 - Route handlers in routes/ directory (backend)
+- Domain onboarding for Mailcow/Cloudflare is documented in:
+  - `scripts/mailcow-add-domain.md`
 
 ### Security
 - Helmet middleware for security headers
