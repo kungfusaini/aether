@@ -1,200 +1,185 @@
-# Aether - Unified Docker Setup
+# Aether
 
-Complete Docker Compose orchestration for web applications with integrated services.
+A self-hosted Docker platform for running websites, APIs, bots, analytics, and email behind one production gateway.
+
+Aether is the infrastructure layer for my personal and studio projects. It keeps local development and production deployment in one Compose-based system, builds service images with GitHub Actions, and rolls updates onto an ARM64 VPS without taking the entire stack down.
+
+## What it manages
+
+- Multiple websites and static applications
+- A shared API and automation services
+- Nginx routing and TLS termination
+- Privacy-friendly analytics with Plausible
+- Mail hosting through Mailcow
+- Automated container builds and rolling deployments
+- Certificate renewal, backups, and operational scripts
 
 ## Architecture
 
-- **sumeetsaini_com**: [Frontend](https://github.com/kungfusaini/sumeetsaini_com) web application (sumeetsaini.com)
-- **vulkan**: [Backend](https://github.com/kungfusaini/vulkan) API service (vulkan.sumeetsaini.com)
-- **arcanecodex**: [Hugo](https://github.com/kungfusaini/arcane-codex) static site (arcanecodex.dev)
-- **gateway**: Nginx reverse proxy with SSL termination (handles all domains)
-- **plausible**: Self-hosted analytics (optional in dev, enabled in production)
-- **mailcow**: Email service (production only)
-- **ao3**: AO3 archive reader (ashlynofourown.sumeetsaini.com)
-- **reliqstudios**: Business website (reliqstudios.com)
-- **reliqdigital**: Digital services site (reliq.digital)
-- **bucketbot**: Automated content bucket management bot
-- **goblinbot**: Telegram bot integration service
+```mermaid
+flowchart LR
+    visitor[Visitors and clients] --> gateway[Nginx gateway<br/>routing + TLS]
 
-## Development
+    gateway --> sites[Websites<br/>Sumeet · Arcane Codex · Reliq]
+    gateway --> api[Vulkan API]
+    gateway --> analytics[Plausible Analytics]
+    gateway --> mail[Mailcow]
+
+    bots[Telegram bots] --> api
+
+    github[GitHub Actions] --> registry[GitHub Container Registry]
+    registry --> host[ARM64 VPS]
+    host --> gateway
+    host --> bots
+```
+
+The base Compose file defines the shared service topology. Environment-specific overlays add local bind mounts, production images, analytics, and mail services as needed.
+
+## Services
+
+| Service | Role | Public project |
+| --- | --- | --- |
+| `gateway` | Nginx reverse proxy, routing, security headers, and TLS termination | — |
+| `sumeetsaini_com` | Interactive personal website | [kungfusaini/sumeetsaini_com](https://github.com/kungfusaini/sumeetsaini_com) |
+| `vulkan` | Shared API for projects, contact forms, and personal tools | [kungfusaini/vulkan](https://github.com/kungfusaini/vulkan) |
+| `arcanecodex` | Hugo-powered writing and reference site | [kungfusaini/arcane-codex](https://github.com/kungfusaini/arcane-codex) |
+| `reliqstudios` | Reliq Studios website | [kungfusaini/reliqstudios](https://github.com/kungfusaini/reliqstudios) |
+| `reliqdigital` | Reliq digital-services website | [kungfusaini/reliq.digital](https://github.com/kungfusaini/reliq.digital) |
+| `reliqlabs` | Reliq Labs website | [kungfusaini/reliqlabs](https://github.com/kungfusaini/reliqlabs) |
+| `bucketbot` | Telegram automation and capture bot | [kungfusaini/bucketbot](https://github.com/kungfusaini/bucketbot) |
+| `goblinbot` | Telegram interface for personal-finance data | [kungfusaini/goblinbot](https://github.com/kungfusaini/goblinbot) |
+| `plausible` | Self-hosted, privacy-friendly analytics | [plausible/analytics](https://github.com/plausible/analytics) |
+| `mailcow` | Self-hosted email stack | [mailcow/mailcow-dockerized](https://github.com/mailcow/mailcow-dockerized) |
+
+Aether also hosts a small collection of private and standalone web applications that use the same gateway and deployment model.
+
+## Compose model
+
+| File | Purpose |
+| --- | --- |
+| `docker-compose.yml` | Shared service definitions and network topology |
+| `docker-compose-dev.yml` | Local builds, bind mounts, ports, and development configuration |
+| `docker-compose-prod.yml` | GHCR images, production volumes, and external networks |
+| `docker-compose-plausible.yml` | Plausible and its data services |
+| `docker-compose-mailcow.yml` | Mailcow integration |
+
+Keeping these concerns in overlays makes the development stack lightweight while allowing production to opt into stateful infrastructure.
+
+## Local development
+
+### Requirements
+
+- Docker with Compose v2
+- Git with submodule support
+
+Clone the repository and its service submodules:
 
 ```bash
-# Start development environment (without analytics)
-docker compose -f docker-compose.yml -f docker-compose-dev.yml up -d
+git clone --recurse-submodules https://github.com/kungfusaini/aether.git
+cd aether
+```
 
-# Start with Plausible analytics (optional)
-docker compose -f docker-compose.yml -f docker-compose-dev.yml -f docker-compose-plausible.yml up -d
+Start the normal development stack:
 
-# View logs
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose-dev.yml \
+  up -d
+```
+
+Add local analytics when needed:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose-dev.yml \
+  -f docker-compose-plausible.yml \
+  up -d
+```
+
+Useful commands:
+
+```bash
+# Follow all service logs
 docker compose logs -f
 
-# Stop services
+# Inspect running services
+docker compose ps
+
+# Stop the stack
 docker compose down
 ```
 
-**Access:**
-- Frontend: http://localhost
-- API: http://vulkan.localhost
-- Arcane Codex: http://arcanecodex.localhost
-- Analytics (if enabled): http://stats.localhost
+### Local endpoints
 
-**Setup for development with Plausible:**
-1. Add to `/etc/hosts`: `127.0.0.1 stats.localhost`
-2. Visit http://stats.localhost/register to create an account
-3. Add sites: `sumeetsaini.com` and `arcanecodex.dev`
-4. Note: localhost traffic is automatically filtered by Plausible
+| Surface | URL |
+| --- | --- |
+| Gateway | `http://localhost` |
+| Personal website | `http://localhost:8080` |
+| Vulkan API | `http://localhost:3000` |
+| Arcane Codex | `http://localhost:1313` |
+| Plausible | `http://stats.localhost` when its overlay is enabled |
 
-**Email:** Enabled by default with auto-generated Ethereal credentials for testing.
+Some gateway hostnames require matching entries in `/etc/hosts`; see the development Nginx configuration under `services/gateway/conf.d/dev/`.
 
-## Production Deployment
+## Deployment
 
-```bash
-# Deploy all services (including Plausible analytics)
-docker compose -f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml -f docker-compose-plausible.yml up -d
-```
+The main GitHub Actions workflow:
 
-**Production Analytics Setup:**
-1. Obtain SSL certificate: `sudo certbot certonly --standalone -d stats.sumeetsaini.com`
-2. Visit https://stats.sumeetsaini.com/register to create admin account
-3. Add sites: `sumeetsaini.com` and `arcanecodex.dev`
-4. Analytics are automatically tracked on production domains
+1. Checks out the repository and service submodules.
+2. Builds ARM64 images for the maintained services.
+3. Pushes the resulting container images to GitHub Container Registry.
+4. Copies Compose and operational files to the host.
+5. Pulls changed images and updates services individually.
+6. Removes unused images after a successful rollout.
 
-## SSL Management
+Individual projects can also trigger focused deployments. For example, the `babbi.world` workflow updates only its own service rather than redeploying the full platform.
 
-Wildcard certificates managed via Let's Encrypt with automatic renewal.
-
-### How SSL Renewal Works
-
-1. **Webroot Method**: Certbot places verification files in `/var/www/letsencrypt/.well-known/acme-challenge/` on the host
-2. **Nginx serves challenges**: HTTP server blocks include a location to serve these files before redirecting to HTTPS
-3. **Automatic renewal**: Systemd timer runs `certbot renew` twice daily; deploy hook restarts nginx after renewal
-
-### Adding a New Website
-
-Follow these steps to add a new domain to the gateway:
-
-#### 1. Obtain SSL Certificate (First!)
-
-SSH to your VPS and get the certificate **before** creating nginx config:
+Production configuration is assembled from Compose overlays:
 
 ```bash
-# Create webroot directory if it doesn't exist (one-time setup)
-sudo mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
-
-# Request SSL certificate
-sudo certbot certonly --webroot --webroot-path /var/www/letsencrypt -d <domain> -d www.<domain>
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose-prod.yml \
+  -f docker-compose-mailcow.yml \
+  -f docker-compose-plausible.yml \
+  up -d
 ```
 
-#### 2. Create Nginx Configuration
+This command documents the topology; a real deployment also requires host directories, external Docker networks, certificates, and secrets configured by the deployment environment.
 
-Create `services/gateway/conf.d/prod/<domain>.conf`:
+## Operations
 
-```nginx
-# <domain> - Production (HTTPS)
+- [TLS certificate setup and renewal](docs/tls.md)
+- [Mailcow domain onboarding](scripts/mailcow-add-domain.md)
+- `scripts/setup-backup.sh` — configure backups
+- `scripts/test-backup.sh` — exercise the backup path
+- `scripts/verify-backup.sh` — verify backup output
+- `scripts/cf-add-site.sh` — assist with Cloudflare site setup
 
-# HTTP to HTTPS redirect with ACME challenge support
-server {
-    listen 80;
-    listen [::]:80;  # IPv6 (required if domain has AAAA record)
-    server_name <domain> www.<domain>;
+## Repository layout
 
-    location /.well-known/acme-challenge/ {
-        root /var/www/letsencrypt;
-    }
-
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-# HTTPS server
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;  # IPv6 (required if domain has AAAA record)
-    server_name <domain> www.<domain>;
-    
-    include /etc/nginx/conf.d/common/security.conf;
-    
-    ssl_certificate /etc/letsencrypt/live/<domain>/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/<domain>/privkey.pem;
-
-    location / {
-        proxy_pass http://<backend_service_name>_prod;
-        include /etc/nginx/conf.d/common/proxy-headers.conf;
-    }
-
-    # Add additional locations as needed (e.g., /stats/, /api/, /vulkan/)
-}
+```text
+.
+├── .github/workflows/       # Build and deployment automation
+├── docs/                    # Operational documentation
+├── scripts/                 # TLS, backup, DNS, and mail helpers
+├── services/                # Gateway plus application submodules
+├── docker-compose.yml       # Shared topology
+├── docker-compose-dev.yml   # Development overlay
+├── docker-compose-prod.yml  # Production overlay
+├── docker-compose-mailcow.yml
+└── docker-compose-plausible.yml
 ```
 
-**Important:**
-- Replace `<domain>` and `<backend_service_name>` with your actual values
-- Add IPv6 `listen [::]:80;` and `listen [::]:443 ssl http2;` if your domain has an AAAA DNS record
-- The ACME location block is required for automatic SSL renewal
+## Security model
 
-#### 3. Add Upstream (if needed)
+- Deployment credentials and application secrets are supplied through GitHub Actions secrets and host-managed environment values.
+- The gateway centralizes TLS, proxy headers, and common security policy.
+- Production-only credentials are not required for the normal development stack.
+- Repository examples use placeholders; secrets should never be committed to Compose files.
 
-Add to `services/gateway/conf.d/prod/upstreams.conf`:
+## Scope
 
-```nginx
-upstream <backend_service_name>_prod {
-    server <service_name>:<port>;
-}
-```
-
-#### 4. Deploy
-
-```bash
-git add .
-git commit -m "Add <domain> to gateway with HTTPS"
-git push origin main
-```
-
-#### 5. Verify
-
-After deployment, on your VPS:
-
-```bash
-# Test renewal works
-sudo certbot renew --dry-run
-
-# Check nginx is running
-docker ps | grep gateway
-```
-
-### Important Notes
-
-- **IPv6 Requirement**: If your domain has an AAAA DNS record, you **must** include `listen [::]:80;` and `listen [::]:443 ssl http2;` in your nginx config. Let's Encrypt validates via IPv6 when available, and will fail with "Connection refused" if nginx isn't listening on IPv6.
-- **SSL Renewal Hook**: The script `/etc/letsencrypt/renewal-hooks/deploy/ssl-renewal-hook.sh` automatically restarts the gateway container when any gateway certificate renews. It's automatically synced via the deploy workflow, but you need to manually copy it to the renewal-hooks directory after first deploy:
-  ```bash
-  sudo cp /var/www/containers/scripts/ssl-renewal-hook.sh /etc/letsencrypt/renewal-hooks/deploy/ssl-renewal-hook.sh
-  sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/ssl-renewal-hook.sh
-  ```
-- **Redundant Crontab**: Check for a manual `certbot renew` crontab entry (`crontab -l`). If present, remove it. Automatic renewals are handled by the systemd timer (`certbot.timer`).
-- **Webroot Directory**: Must exist on the host at `/var/www/letsencrypt/` and be mounted into the gateway container via `docker-compose-prod.yml`: `- /var/www/letsencrypt:/var/www/letsencrypt:ro`
-- **Two-Step HTTPS Enablement**: Always add the HTTP-only config first, obtain the SSL certificate, then add the HTTPS server block. Adding HTTPS block before the certificate exists will cause nginx to fail to start.
-
-## Deployment Pipeline
-
-Automated via GitHub Actions on push to main:
-1. Builds Docker images (linux/arm64)
-2. Pushes to GitHub Container Registry
-3. Syncs configs to production server
-4. Deploys services with secrets
-5. Runs health checks
-6. Cleans up old images
-
-**Security**: All secrets managed via GitHub Secrets
-
-## Features
-
-- Modern web application frontend
-- RESTful API backend
-- Static site generation with Hugo
-- Self-hosted privacy-friendly analytics
-- Rate-limited contact system
-- Security-hardened services
-- Containerized deployment
-- Unified Docker orchestration
-- SSL certificate management
-- Integrated email service
+Aether is a working personal infrastructure repository rather than a turnkey hosting product. Its architecture and operational patterns are reusable, but production deployment assumes control of the target VPS, DNS, certificates, external networks, and service-specific secrets.
