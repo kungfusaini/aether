@@ -160,7 +160,7 @@ jobs:
           docker network create aether-network 2>/dev/null || true
 
           # Authenticate AETHER to pull private images from GitHub Container Registry
-          echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u kungfusaini --password-stdin
+          printf '%s' "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u kungfusaini --password-stdin
           
           # Pull new images
           MAIN_EMAIL=${{ secrets.MAIN_EMAIL }} \
