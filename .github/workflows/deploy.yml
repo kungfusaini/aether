@@ -160,7 +160,7 @@ jobs:
           docker network create aether-network 2>/dev/null || true
 
           # Authenticate AETHER to pull private images from GitHub Container Registry
-          printf '%s' "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u kungfusaini --password-stdin
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           
           # Pull new images
           MAIN_EMAIL=${{ secrets.MAIN_EMAIL }} \
@@ -177,7 +177,9 @@ jobs:
                         -f docker-compose-prod.yml \
                         -f docker-compose-mailcow.yml \
                         -f docker-compose-plausible.yml \
-                        pull
+                        pull reliqdigital reliqstudios vulkan ao3 arcanecodex \
+                             sumeetsaini_com card plausible_db plausible_events_db \
+                             plausible reliqlabs gateway goblinbot bucketbot
 
           # Rolling update (no "down", no "up --force-recreate")
           COMPOSE_FILES="-f docker-compose.yml -f docker-compose-prod.yml -f docker-compose-mailcow.yml -f docker-compose-plausible.yml"
@@ -207,7 +209,6 @@ jobs:
           docker compose $COMPOSE_FILES up -d --no-deps --scale reliqstudios=1 reliqstudios
           docker compose $COMPOSE_FILES up -d --no-deps --scale reliqlabs=1 reliqlabs
           docker compose $COMPOSE_FILES up -d --no-deps --scale reliqdigital=1 reliqdigital
-          docker compose $COMPOSE_FILES up -d --no-deps --scale babbi_world=1 babbi_world
           docker compose $COMPOSE_FILES up -d --no-deps --scale card=1 card
            
            # Clean up old images
