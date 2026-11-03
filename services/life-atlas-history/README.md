@@ -83,7 +83,7 @@ The Google baseline is also snapshotted on this same server. That is provenance
 preservation, **not an off-server backup**. Snapshot storage can grow with
 reuploads; retention/disk monitoring needs a separate deliberate policy.
 
-`life-atlas-history.timer` runs the oneshot importer at boot and five minutes
+`life-atlas-history.timer` runs the oneshot importer at boot and one hour
 after each completed run. No network access, private device/tmp namespaces,
 read-only system, and writes restricted to the output directory. The job runs
 as root with only `CAP_DAC_READ_SEARCH` to read the uploader's private files;

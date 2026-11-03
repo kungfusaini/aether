@@ -1,9 +1,9 @@
 [Unit]
-Description=Index new GPSLogger uploads every five minutes
+Description=Index new GPSLogger uploads hourly
 
 [Timer]
 OnBootSec=2min
-OnUnitInactiveSec=5min
+OnUnitInactiveSec=1h
 AccuracySec=15s
 Unit=life-atlas-history.service
 
