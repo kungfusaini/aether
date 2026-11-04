@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+venv/
+reference/
+pilot-*/
+*.sqlite*
+*.osm*
+*.pbf
+*.zip
+report.html
+report.json
+manifest.json
+downloads.json
