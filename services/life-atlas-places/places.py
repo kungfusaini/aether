@@ -2,7 +2,7 @@
 """Offline, read-only travel analysis. No network, web server or importer changes."""
 import argparse
 from collections import defaultdict
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import datetime as dt
 import hashlib
 import html
@@ -237,22 +237,31 @@ def analyse(history_path, catalogue_path, gps_start, gps_end, google_start, goog
     # Normalize to the history index's exact lexical UTC timestamp format.
     def utc(s):
         return timestamp(s).astimezone(dt.timezone.utc).isoformat(timespec='microseconds').replace('+00:00', 'Z')
-    with readonly(catalogue_path) as c:
+    paths = list(catalogue_path) if isinstance(catalogue_path, (list, tuple)) else [catalogue_path]
+    if not paths:
+        raise ValueError('at least one local catalogue required')
+    with readonly(paths[0]) as c:
         bbox = json.loads(c.execute("SELECT value FROM metadata WHERE key='osm_bbox'").fetchone()[0])
     with readonly(history_path) as h:
         events, points, snapshot = collect(h, utc(gps_start), utc(gps_end),
                                           utc(google_start), utc(google_end), bbox)
     stops, rejected = detect_stops(points)
-    with readonly(catalogue_path) as c:
-        matcher = Matcher(c)
+    with ExitStack() as stack:
+        matchers = [Matcher(stack.enter_context(readonly(path))) for path in paths]
         for item in events + stops:
             lat, lon = item['latitude'], item['longitude']
-            item['nearby_locality'] = matcher.nearby_town(lat, lon)
+            item['nearby_locality'] = matchers[0].nearby_town(lat, lon)
+            covering = next((m for m in matchers if m.metadata['osm_bbox'][0] <= lon <= m.metadata['osm_bbox'][2]
+                and m.metadata['osm_bbox'][1] <= lat <= m.metadata['osm_bbox'][3]), None)
+            matcher = covering or matchers[0]
             item['candidates'], item['coverage'] = matcher.candidates(lat, lon)
+            item['catalogue_reference'] = dict(osm_url=matcher.metadata.get('osm_url'),
+                                              osm_sha256=matcher.metadata['osm_sha256']) if covering else None
             item['display_timezone'] = google_timezone if item['source'] == 'google_timeline' else 'UTC'
-        meta = matcher.metadata
+        meta = matchers[0].metadata
+        catalogues = [m.metadata for m in matchers]
     result = dict(schema_version=1, generated_utc=dt.datetime.now(dt.timezone.utc).isoformat(),
-        pilot_snapshot_counts=snapshot, catalogue=meta, stop_settings=DEFAULTS,
+        pilot_snapshot_counts=snapshot, catalogue=meta, catalogues=catalogues, stop_settings=DEFAULTS,
         gps_window=[utc(gps_start), utc(gps_end)], google_window=[utc(google_start), utc(google_end)],
         gps_input_points=len(points), gps_rejected_points=rejected,
         gps_point_provenance='point IDs join observations.point_id to assets and original locators in history.sqlite',
@@ -263,7 +272,7 @@ def analyse(history_path, catalogue_path, gps_start, gps_end, google_start, goog
             'Nested Google visits overlap; do not sum their durations or count them as separate trips.',
             'GPS spans describe sampled observations, not uninterrupted presence; gaps split candidates.',
             'GPS timestamps shown in UTC; Google visits use the requested display timezone, not literal export wall-clock strings.',
-            'Venue reference covers only the selected pilot rectangle; worldwide nearby localities are available.',
+            'Venue reference covers only the selected regional rectangles; worldwide nearby localities are available.',
             'No external assets, map tiles, tracking scripts, external API calls or confirmed-place overrides.'
         ], visits=events + stops)
     return result
@@ -316,7 +325,7 @@ code{overflow-wrap:anywhere}summary{cursor:pointer}nav a{margin-right:1rem}a{col
     return ''.join(parts)
 
 
-def write_report(result, output):
+def write_report(result, output, renderer=render):
     os.umask(0o077)
     output = Path(output)
     output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -325,7 +334,7 @@ def write_report(result, output):
     with tempfile.TemporaryDirectory(prefix='.report-', dir=output.parent) as tmp:
         payload = json.dumps(result, ensure_ascii=False, indent=2)
         (Path(tmp)/'report.json').write_text(payload, encoding='utf-8')
-        (Path(tmp)/'report.html').write_text(render(result), encoding='utf-8')
+        (Path(tmp)/'report.html').write_text(renderer(result), encoding='utf-8')
         manifest = dict(json_sha256=hashlib.sha256(payload.encode()).hexdigest(),
                         html_sha256=hashlib.sha256((Path(tmp)/'report.html').read_bytes()).hexdigest())
         (Path(tmp)/'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
@@ -344,13 +353,23 @@ def write_report(result, output):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--history', required=True)
-    p.add_argument('--catalogue', required=True)
+    p.add_argument('--catalogue', required=True, action='append', help='repeat for local regions; first selects historical trip area')
     p.add_argument('--gps-start', required=True)
     p.add_argument('--gps-end', required=True)
     p.add_argument('--google-start', required=True)
     p.add_argument('--google-end', required=True)
     p.add_argument('--google-timezone', default='UTC')
     p.add_argument('--output', required=True)
+    p.add_argument('--map-reference-dir')
+    p.add_argument('--map-context')
     args = p.parse_args()
-    write_report(analyse(args.history, args.catalogue, args.gps_start, args.gps_end,
-                         args.google_start, args.google_end, args.google_timezone), args.output)
+    if bool(args.map_reference_dir) != bool(args.map_context):
+        p.error('map reference directory and context must be provided together')
+    result = analyse(args.history, args.catalogue, args.gps_start, args.gps_end,
+                     args.google_start, args.google_end, args.google_timezone)
+    renderer = render
+    if args.map_reference_dir:
+        from map_report import prepare, render_map
+        result = prepare(result, args.map_reference_dir, args.map_context)
+        renderer = render_map
+    write_report(result, args.output, renderer=renderer)

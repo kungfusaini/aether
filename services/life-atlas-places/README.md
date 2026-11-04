@@ -14,7 +14,11 @@ Dates, reference region and display timezone are operator inputs, never personal
 itinerary constants committed in source. It does not inventory all historical
 points or rebuild the whole chronology.
 
-Both sources use one matcher and one report schema:
+Both sources use one matcher and one report schema. Repeat `--catalogue` for
+additional explicitly approved local regions; the **first** catalogue selects
+the historical trip rectangle, while each observation uses its covering region.
+The map mode below presents grouped places instead of individual source rows.
+
 
 - Google's visits retain asset ID, original locator, opaque Google place ID,
   hierarchy and source probabilities. They remain Google's inferences; nested
@@ -36,7 +40,7 @@ Both sources use one matcher and one report schema:
   not municipality or country-boundary containment. `cities1000` omits many
   small settlements. Report grouping is explicitly “near town”, not “visited
   this town/country”. The reference does not establish verified country counts.
-- Venue reference coverage is the selected region only; GPS stops outside it still get
+- Venue reference coverage is the selected regions only; GPS stops outside them still get
   worldwide nearby-locality labels, with **venues not searched**. Broader venue
   coverage requires a separately chosen regional extract, not online fallbacks.
 - Current map data cannot prove a venue's historical name, existence or attendance.
@@ -74,14 +78,16 @@ All real processing takes place on Aether:
 
 Directory mode 0700, files 0600; all under the existing root-private tree and
 outside web roots. The upload account must not read these outputs. The report
-contains sensitive locations and source references. It has escaped HTML, no
-JavaScript, no map tiles/fonts/remote assets, and a restrictive CSP. Opening it
+contains sensitive locations and source references. The legacy list uses no
+JavaScript. The map uses hash-pinned **embedded** Leaflet/markercluster and an
+exact-script-hash CSP, with no remote tiles/fonts/assets or runtime lookups. Opening it
 does not call external services. Nothing copies real tracks or archives onto
 the laptop or creates a public/shareable URL. Reading the report through a
 local browser/tunnel or exporting it is a separate explicit handoff decision.
 
-`setup_reference.py` is the **only networked command**. It reads public package
-and geographic URLs, never personal locations, the history index or uploads:
+`setup_reference.py` and `setup_map.py` are the **only networked setup commands**.
+They read public package/geographic URLs, never personal locations, the history
+index or uploads:
 
 - An explicitly selected [Geofabrik regional PBF](https://download.geofabrik.de/),
   streamed locally with a chosen selection rectangle; maximum download 400 MiB.
@@ -114,8 +120,9 @@ python3 -B -m unittest discover -s services/life-atlas-places -v
 ```
 
 The real-parser synthetic node/area test skips without pyosmium; run all tests
-on Aether using the isolated venv. No tests use real coordinates or network
-requests. Tests cover shared inputs, source read-only access, gaps/accuracy,
+on Aether using the isolated venv. Python unit tests use synthetic coordinates
+and mocked downloads, not real locations or external requests. Tests cover
+shared inputs, source read-only access, gaps/accuracy,
 geometry/holes, date-line locality lookup, timezone normalization, private
 output modes, escaping/CSP and download failures.
 
@@ -172,10 +179,102 @@ systemd-run --unit=life-atlas-places-report --wait --pipe \
   --output /srv/life-atlas/places/pilot-RUN
 ```
 
+## Map-first mode (explicit, still no permanent app)
+
+`setup_map.py` downloads one approved public Geofabrik reference, pinned
+[Leaflet 1.9.4](https://leafletjs.com/) (BSD-2-Clause),
+[Leaflet.markercluster 1.5.3](https://github.com/Leaflet/Leaflet.markercluster)
+(MIT) and [Natural Earth 5.1.2 land](https://www.naturalearthdata.com/about/terms-of-use/)
+(public domain). The npm archives are SHA-512 pinned; extracted library files
+and the land data are SHA-256 checked by rendering. Only explicit regular tar
+members are extracted. No CDN is contacted when opening the report. Existing
+receipted public references are verified, not overwritten.
+
+Install `requirements-map-arm64-py313.txt` **only in the existing isolated
+build venv**, using `--only-binary=:all: --require-hashes --no-cache-dir`.
+Shapely/GEOS and NumPy are build-time geometry tools, not new live services or
+report-generation dependencies. This avoids implementing a custom simplifier.
+
+Build a second catalogue with `catalogue.py` for the approved additional region,
+retaining the first catalogue. Run `map_context.py` offline against a previous
+bounded report and those two public PBFs. It derives the private selection
+bounds locally, never sends them to a provider, and retains public reference
+hashes. Named towns, road lines, coasts and rivers provide map context. Line
+simplification is 35 m for regional context and 3 m for neighbourhood context,
+using a local metric approximation; **personal coordinates and venue geometry
+are not simplified**. It is not a navigational basemap. Each context is capped
+at 300,000 coordinates; an over-budget job fails rather than silently clipping
+records or raising memory limits.
+
+Run setup under the same public-only, private-input-inaccessible systemd sandbox
+shown above; the following shows its command arguments:
+
+```sh
+# Public-only download setup, isolated from private inputs:
+python3 /opt/life-atlas-places/setup_map.py \
+  --root /srv/life-atlas/places/reference \
+  --osm-url 'https://download.geofabrik.de/REGION-latest.osm.pbf' \
+  --osm-filename region.osm.pbf
+
+# Offline context (use a new output, with the same resource sandbox as catalogue):
+/opt/life-atlas-places/venv/bin/python -B /opt/life-atlas-places/map_context.py \
+  --report /srv/life-atlas/places/EXISTING-RUN/report.json \
+  --history-map /srv/life-atlas/places/reference/HISTORY.osm.pbf \
+  --gps-map /srv/life-atlas/places/reference/GPS.osm.pbf \
+  --output /srv/life-atlas/places/NEW-CONTEXT.json
+```
+
+For report generation, repeat `--catalogue SECOND-CATALOGUE.sqlite` and add
+`--map-reference-dir /srv/life-atlas/places/reference --map-context NEW-CONTEXT.json`
+to the offline report command above. Use the system Python, not a live GIS
+server. The generated HTML is self-contained; no directory/file server is
+required on Aether. Map licences, source records and separate time intervals
+are retained in the private output.
+
+Historical records group by Google place ID; differing IDs are not silently
+collapsed. GPS records use complete-link grouping: every centre in a group
+must be within 100 m of every other centre, avoiding proximity chains. Spatial
+groups are **not** counts of verified venues or uninterrupted stays. Unknown
+accommodation is not assigned to a nearby school. GPS headings prefer nearby
+named roads; other POIs remain clearly qualified candidates. Road hints retain
+the immutable context feature index/reference hash. Named landmarks/venues are
+preferred to broad land-cover parents for headings as a display preference,
+not an invented confidence score; all original candidates remain in details.
+
+The trip appears first, with a map and named cards, not an uncovered GPS dump.
+Day filtering applies to both markers **and source segments**. Dense markers
+cluster on screen; even at maximum zoom, coincident markers can spiderfy and
+remain individually selectable. Source details begin collapsed. Background
+roads are not observed routes; no paths are drawn across recording gaps.
+Names enter the DOM with `textContent`; embedded JSON escapes script-ending
+characters, and CSP hashes cover the exact local scripts. No external API,
+weather, telemetry, map tiles or network fallback is configured.
+
+## Browser acceptance
+
+`test_map_browser.mjs` uses an existing Playwright/Chromium, always headless with
+an isolated temporary profile. It tests actual painted markers in the first
+viewport, context, day/source filters, per-day segments, zoom, dense clusters,
+coincident markers at zoom 19, card/raw-detail access and mobile layout. Any
+attempted external page request or page error fails the test. Set
+`PLAYWRIGHT_PATH` and `MAP_TEST_BROWSER` for the local test environment.
+
+For synthetic fixtures, use `--fixture PATH --screenshot PATH` (the fixture
+must explicitly contain `Synthetic data only`). **Screenshots are forbidden
+for private report URLs**. A real-data acceptance run uses only the approved
+in-memory localhost viewer via `TRAVEL_MAP_TEST_URL`, optionally with
+`--expected-gps-groups COUNT`; it does not save a report file or private image.
+Temporary browser profiles use the runtime directory and are removed after
+headless tests. No user's live browser profile is reused.
+
+## Resource notes
+
 A regional reference build can take tens of minutes at the half-core cap;
 this is a one-off batch, not a continuously running geocoder. The tested bounded
-report used about 13 MiB and under one second after spatial-query optimization;
-those figures are not a promise for arbitrary reference regions or samples.
+legacy list report used about 13 MiB and under one second after spatial-query
+optimization. The tested map report used about 227 MiB and seven seconds as a
+one-shot batch under the 256 MiB cap; nothing remains running on the VPS.
+Those figures are not promises for arbitrary reference regions or samples.
 
 Inspect `systemctl show UNIT -p Result -p MemoryPeak -p CPUUsageNSec` while the
 transient unit is loaded, and retain the `systemd-run --wait` result or journal

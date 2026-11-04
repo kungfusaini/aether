@@ -11,3 +11,11 @@ report.html
 report.json
 manifest.json
 downloads.json
+map-downloads.json
+map-context*.json
+map-pilot*/
+*.tgz
+*.geojson
+ui/
+synthetic*.html
+*.png

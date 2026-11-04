@@ -1,0 +1,4 @@
+# One-off context simplification only; no live report/viewer dependency.
+-r requirements-arm64-py313.txt
+shapely==2.2.0 --hash=sha256:4ed79beb8d4b6cc7c67780fd381feed25848a5f9b8a2385ac5711eccd115647a
+numpy==2.5.4 --hash=sha256:1c2e71b04c6cad90026e544501bbe0ab9290fa8a4d845e7e8c0d124fb429c988

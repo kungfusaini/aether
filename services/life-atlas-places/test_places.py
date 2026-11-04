@@ -281,6 +281,28 @@ class CatalogueTest(unittest.TestCase):
         self.assertEqual(len(json.loads((out/'report.json').read_text())['visits']),2)
         self.assertTrue((out/'manifest.json').exists())
 
+    def test_multiple_catalogues_cover_gps_without_changing_history_region(self):
+        history=self.create_history()
+        with closing(sqlite3.connect(history)) as db,db:
+            db.execute("UPDATE points SET latitude=51.5,longitude=-.5 WHERE source='gpslogger'")
+        before=history.read_bytes()
+        add_place(self.db,'geonames','populated_place',98,'Other town',51.5,-.5,'locality',country='YY')
+        self.db.commit()
+        other=self.root/'other.sqlite'
+        with closing(sqlite3.connect(other)) as db,db:
+            db.executescript(SCHEMA)
+            db.executemany('INSERT INTO metadata VALUES (?,?)',[(k,json.dumps(v)) for k,v in
+                {'osm_bbox':[-1,51,0,52],'osm_sha256':'other-hash','attribution':'synthetic'}.items()])
+            add_place(db,'osm','node',7,'Library',51.5,-.5,'amenity','library')
+        r=analyse(history,[self.path,other],'2020-07-02T00:00:00Z','2020-07-03T00:00:00Z',
+                  '2020-07-01T00:00:00Z','2020-07-02T00:00:00Z')
+        gps=next(v for v in r['visits'] if v['source']=='gpslogger')
+        self.assertEqual(gps['candidates'][0]['name'],'Library')
+        self.assertEqual(gps['catalogue_reference']['osm_sha256'],'other-hash')
+        self.assertEqual(gps['nearby_locality']['name'],'Other town')
+        self.assertEqual(len(r['catalogues']),2)
+        self.assertEqual(history.read_bytes(),before)
+
     def test_collection_does_not_inventory_whole_history(self):
         history=self.create_history()
         queries=[]
