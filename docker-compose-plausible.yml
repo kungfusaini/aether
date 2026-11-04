@@ -30,6 +30,11 @@ services:
     image: ghcr.io/plausible/community-edition:v2.1.4
     restart: unless-stopped
     container_name: plausible
+    # Erlang sizes its port table from nofile; the host default wastes ~1.5 GiB.
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     depends_on:
       - plausible_db

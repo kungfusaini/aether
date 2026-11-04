@@ -152,6 +152,7 @@ This command documents the topology; a real deployment also requires host direct
 ## Operations
 
 - [TLS certificate setup and renewal](docs/tls.md)
+- [Plausible memory guard and verification](docs/plausible-memory.md)
 - [Mailcow domain onboarding](scripts/mailcow-add-domain.md)
 - `scripts/setup-backup.sh` — configure backups
 - `scripts/test-backup.sh` — exercise the backup path
