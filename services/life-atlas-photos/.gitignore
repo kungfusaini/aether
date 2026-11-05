@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.sqlite*
+private-*.json
+originals/
+samples/
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.webp
