@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.wav
+*.opus
+*.bin
+*.gguf
+*.srt
+*.vtt
+transcript*
+results/
+models/

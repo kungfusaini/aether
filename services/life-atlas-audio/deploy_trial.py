@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Deploy only trial code/config using approved trusted SSH; no private content transfer."""
+from pathlib import Path
+import subprocess
+import tarfile
+
+SOURCE = Path(__file__).resolve().parent
+FILES = ['trial.py', 'trial.lock.json', 'test_trial.py', 'README.md']
+SSH = ['ssh', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', 'aether']
+
+
+def deploy():
+    subprocess.run(['python3', '-B', '-m', 'unittest', 'discover', '-s', str(SOURCE), '-v'], check=True)
+    subprocess.run(SSH + ['set -eu; umask 077; '
+        'if test -e /opt/life-atlas-audio; then '
+        'cp -a /opt/life-atlas-audio /opt/life-atlas-audio-backup-$(date -u +%Y%m%dT%H%M%SZ); fi; '
+        'install -d -m 700 /opt/life-atlas-audio'], check=True)
+    process = subprocess.Popen(SSH + ['umask 077; tar --no-same-owner -xf - -C /opt/life-atlas-audio'], stdin=subprocess.PIPE)
+    try:
+        with tarfile.open(fileobj=process.stdin, mode='w|') as archive:
+            for name in FILES:
+                archive.add(SOURCE/name, arcname=name, recursive=False)
+        process.stdin.close()
+        if process.wait(timeout=60):
+            raise RuntimeError('Trial source transfer failed')
+    finally:
+        if process.poll() is None:
+            process.kill()
+    subprocess.run(SSH + ['set -eu; chown -R root:root /opt/life-atlas-audio; '
+        'chmod 600 /opt/life-atlas-audio/*; cd /opt/life-atlas-audio; '
+        'python3 -B -m unittest -v; python3 -B trial.py install'], check=True)
+
+
+if __name__ == '__main__':
+    deploy()

@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "image": "ghcr.io/ggml-org/whisper.cpp@sha256:123f9873f31e45450ccfe204e5765ed318fe5eb874d81a1ba07ff8d107f5d936",
+  "image_platform": "linux/arm64",
+  "image_source_tag_at_selection": "main-arm64",
+  "model": {
+    "filename": "ggml-small.en-q5_1.bin",
+    "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-q5_1.bin",
+    "sha256": "bfdff4894dcb76bbf647d56263ea2a96645423f1669176f4844a1bf8e478ad30",
+    "bytes": 190098681
+  },
+  "public_fixture": {
+    "filename": "jfk.wav",
+    "url": "https://raw.githubusercontent.com/ggml-org/whisper.cpp/v1.9.5/samples/jfk.wav",
+    "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e",
+    "bytes": 352078,
+    "reference": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country"
+  },
+  "limits": {
+    "cpu_quota": "1.5",
+    "threads": 2,
+    "memory": "1536m",
+    "pids": 128,
+    "timeout_seconds": 900,
+    "pilot_seconds": 90
+  }
+}
