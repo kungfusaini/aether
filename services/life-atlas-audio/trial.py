@@ -134,19 +134,31 @@ def word_error_rate(reference, hypothesis):
     return row[-1] / max(1, len(a))
 
 
-def run_trial(lock, source=None):
+def select_pilot(source, original_sha256=None):
+    source = Path(source)
+    raw = original_sha256 is not None
+    root = STATE / ('transcription-raw-staging' if raw else 'processed')
+    if source.is_symlink() or not source.is_file() or not source.resolve().is_relative_to(root.resolve()):
+        raise RuntimeError('Pilot source must be a regular file in its approved private source root')
+    if raw:
+        if source.name != 'log001.wav' or not re.fullmatch(r'[0-9a-f]{64}', original_sha256):
+            raise RuntimeError('Original pilot requires the approved log001 filename and source hash')
+        if sha256(source) != original_sha256:
+            raise RuntimeError('Original WAV does not match the approved source hash')
+        return source, 'private-90s-original-wav'
+    if not re.fullmatch(r'log001-[0-9a-f]{12}\.opus', source.name):
+        raise RuntimeError('Only the approved log001 compressed pilot is permitted')
+    return source, 'private-90s'
+
+
+def run_trial(lock, source=None, original_sha256=None):
     if source is None:
         kind = 'public'
         source = STATE / 'public-fixtures' / lock['public_fixture']['filename']
         if sha256(source) != lock['public_fixture']['sha256']:
             raise RuntimeError('Public fixture integrity mismatch')
     else:
-        kind = 'private-90s'
-        source = Path(source)
-        if source.is_symlink() or not source.is_file() or not source.resolve().is_relative_to((STATE / 'processed').resolve()):
-            raise RuntimeError('Pilot source must be a regular archived audio file')
-        if not re.fullmatch(r'log001-[0-9a-f]{12}\.opus', source.name):
-            raise RuntimeError('Only the approved log001 pilot is permitted')
+        source, kind = select_pilot(source, original_sha256)
     model = STATE / 'models' / lock['model']['filename']
     if sha256(model) != lock['model']['sha256']:
         raise RuntimeError('Model integrity mismatch')
@@ -230,8 +242,9 @@ def deadline_self_test(lock):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['install', 'public', 'pilot', 'self-test'])
+    parser.add_argument('action', choices=['install', 'public', 'pilot', 'pilot-raw', 'self-test'])
     parser.add_argument('--source')
+    parser.add_argument('--source-sha256', help='Required original WAV hash from the private batch receipt')
     args = parser.parse_args()
     lock = read_lock()
     if args.action == 'install':
@@ -243,7 +256,9 @@ def main():
     else:
         if not args.source:
             raise RuntimeError('An explicitly selected pilot source is required')
-        run_trial(lock, args.source)
+        if args.action == 'pilot-raw' and not args.source_sha256:
+            raise RuntimeError('Original WAV pilot requires an explicit source hash')
+        run_trial(lock, args.source, args.source_sha256 if args.action == 'pilot-raw' else None)
 
 
 if __name__ == '__main__':

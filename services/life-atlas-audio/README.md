@@ -22,8 +22,13 @@ There is no service/timer, public endpoint, new upload rule or automatic backfil
 
 1. Run the upstream public JFK sample first, comparing normalized words against the
    public reference. This is a smoke gate, not an accuracy benchmark for private speech.
-2. With explicit approval, use only the first **90 seconds of archived log001**.
-   The runner restricts private inputs to that basename in the processed archive.
+2. With explicit approval, use only the first **90 seconds of log001**.
+   The original trial read its compressed archive; a separate `pilot-raw` action
+   supports the same excerpt from the original WAV for controlled comparison.
+   Compressed pilots require the approved basename in the processed archive.
+   Raw pilots require `log001.wav` within the private raw-staging root and an
+   explicit SHA-256 from the outside-Git original source receipt. Wrong hashes,
+   other basenames, outside paths and symlinks are rejected before inference.
 3. Transcribe English, not translate or summarize. No diarization or semantic analysis.
 4. Do not print private transcript content, engine logs or audio into agent/tool/chat
    output. JSON receipts contain only timings, hashes, sizes/counts and output paths.
@@ -47,6 +52,10 @@ Runtime assets on Aether (all outside Git/web roots):
 - Code/config: `/opt/life-atlas-audio` (deployed only from this source directory).
 - Public downloaded weights: `/srv/audio-archive/models`.
 - Public test audio: `/srv/audio-archive/public-fixtures`.
+- Original-WAV comparison staging: `/srv/audio-archive/transcription-raw-staging/`,
+  outside normal audio snapshots. Transfer only the approved original, verify its
+  source hash and phone identity, then remove only that exact task-owned staged
+  file after successful trial generation. The runner does not delete sources.
 - Private trials: `/srv/audio-archive/transcription-trials/<run-id>/`.
   `input/input.wav` is the 90-second mono PCM excerpt; `output/transcript.txt` and
   `output/transcript.json` contain private content. `engine-private.log` can also
@@ -67,6 +76,8 @@ ssh aether 'cd /opt/life-atlas-audio && python3 -B trial.py self-test'
 ssh aether 'cd /opt/life-atlas-audio && python3 -B trial.py public'
 # Private pilot: choose only the explicitly approved archived log001 input.
 ssh aether 'cd /opt/life-atlas-audio && python3 -B trial.py pilot --source /srv/audio-archive/processed/BATCH/log001-SOURCEHASH.opus'
+# Original WAV comparison, only after verified private staging and explicit approval:
+ssh aether 'cd /opt/life-atlas-audio && python3 -B trial.py pilot-raw --source /srv/audio-archive/transcription-raw-staging/RUN/log001.wav --source-sha256 SOURCE_SHA256'
 ```
 
 `deploy_trial.py` transfers only an explicit source/config/test/docs allowlist,
@@ -85,9 +96,19 @@ On Aether with the pinned model/image and 1.5-CPU/two-thread settings:
 | Trial | Audio | End-to-end engine command | Cgroup peak RAM | Accuracy |
 | --- | --- | --- | --- | --- |
 | Public JFK sample | 11 seconds | 32.61 seconds | 509 MiB | 0 normalized word errors against its short reference |
-| Private approved excerpt | 90 seconds | 191.85 seconds | 555 MiB | Awaiting Sumeet's review; no assistant inspection |
+| Private compressed-copy excerpt | 90 seconds | 191.85 seconds | 555 MiB | User found it good but not very accurate; no assistant inspection |
+| Same excerpt from original WAV | 90 seconds | 190.16 seconds | 614 MiB | Awaiting Sumeet's comparison; no assistant inspection |
 
-The private run produced plain text and 19 timestamped segments. Its SSH caller
+Both private runs produced plain text and 19 timestamped segments. Their
+normalized transcripts each contain 251 words and differ by 10 word-level edits.
+That is **transcript disagreement, not a word error rate**: there is no private
+reference transcript, so it does not prove either result more accurate. Model,
+image, excerpt duration and inference settings were unchanged. The phone WAV's
+source identity was checked against the prior batch hash; the exact full raw
+staging file was removed after the successful comparison and phone-original
+integrity check. The separate private 90-second review artifacts are retained.
+
+The compressed-copy private run's SSH caller
 later timed out; a completed server receipt established the actual runtime, and
 the private input was not rerun. A read-only terminal review was opened directly
 for Sumeet without routing transcript text through agent/tool output. Neither the

@@ -67,6 +67,29 @@ class TrialTests(unittest.TestCase):
                 network.assert_not_called()
             self.assertEqual(p.read_bytes(), b'not the expected public fixture')
 
+    def test_raw_pilot_requires_exact_name_root_and_hash(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(trial, 'STATE', Path(directory)):
+            root = Path(directory)
+            stage = root/'transcription-raw-staging'/'synthetic-run'
+            stage.mkdir(parents=True)
+            source = stage/'log001.wav'
+            source.write_bytes(b'synthetic WAV identity fixture, not private audio')
+            checksum = trial.sha256(source)
+            self.assertEqual(trial.select_pilot(source, checksum), (source, 'private-90s-original-wav'))
+            with self.assertRaises(RuntimeError):
+                trial.select_pilot(source, '0'*64)
+            other = stage/'log002.wav'; other.write_bytes(source.read_bytes())
+            with self.assertRaises(RuntimeError):
+                trial.select_pilot(other, checksum)
+            outside = root/'log001.wav'; outside.write_bytes(source.read_bytes())
+            with self.assertRaises(RuntimeError):
+                trial.select_pilot(outside, checksum)
+            link = stage/'linked'; link.symlink_to(source)
+            with self.assertRaises(RuntimeError):
+                trial.select_pilot(link, checksum)
+            with self.assertRaises(RuntimeError):
+                trial.select_pilot(source)  # Raw path must not enter through compressed mode.
+
     def test_no_unapproved_pilot_path(self):
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory)/'unrelated.txt'
