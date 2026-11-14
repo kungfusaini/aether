@@ -6,7 +6,7 @@ import tarfile
 
 SOURCE = Path(__file__).resolve().parent
 FILES = {name: SOURCE/name for name in ['trial.py', 'trial.lock.json', 'test_trial.py',
-    'review.py', 'test_review.py', 'batch.py', 'test_batch.py',
+    'review.py', 'test_review.py', 'batch.py', 'test_batch.py', 'daily.py', 'test_daily.py',
     'life-atlas-audio-batch@.service', 'README.md']}
 FILES['transcript-review.SKILL.md'] = SOURCE.parents[1]/'.agents/skills/uncertain-transcript-review/SKILL.md'
 SSH = ['ssh', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', 'aether']

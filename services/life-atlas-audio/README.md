@@ -227,6 +227,71 @@ and [confidence-guided correction research](https://arxiv.org/abs/2509.25048).
 The marker syntax is a project convention. Research results on other speech
 populations do not establish accuracy improvements on these recordings.
 
+## Daily output assembly (not yet an automatic pipeline)
+
+`daily.py` assembles already-transcribed, explicitly reviewed recordings into
+`YYYYMMDD/transcript.md` and `YYYYMMDD/audio.zip`. This component performs no
+inference, cloud calls, ingestion, deletion, automatic backfill or scheduling.
+It reuses the existing uncertainty-preserving renderer and Python's ZIP support
+rather than adding an archive service/dependency. Opus already compresses audio;
+ZIP uses stored entries and merely bundles those individual recordings.
+
+The caller supplies an outside-Git, caller-owned mode-0700 input root containing
+private raw ASR JSON, source-bound editorial proposals, verified mono Opus files
+and a daily manifest. Each artifact reference has `path` (relative to that root)
+and `sha256`. Manifest schema:
+
+```json
+{
+  "schema": 1,
+  "day": "20261111",
+  "logs": [{
+    "source_sha256": "ORIGINAL_AUDIO_SHA256",
+    "recorded_at": "2026-11-11T12:30:00+00:00",
+    "date_basis": "phone-recording-metadata",
+    "raw": {"path": "log/raw.json", "sha256": "RAW_JSON_SHA256"},
+    "proposal": {"path": "log/proposal.json", "sha256": "PROPOSAL_SHA256"},
+    "opus": {"path": "log/audio.opus", "sha256": "OPUS_SHA256"}
+  }]
+}
+```
+
+The example contains placeholders, not valid hashes. Dates must be offset-aware,
+belong to the requested phone-local day, and have an explicit date basis:
+`phone-recording-metadata` or `user-confirmed`. This tool does not establish that
+metadata's truth; intake must do so. It refuses to silently infer a recording day
+from upload time or assume every arrival is from yesterday. No phone-date metadata
+capture is implemented yet, especially for timezone changes while travelling.
+
+```sh
+python3 -B daily.py --manifest /PRIVATE/input/daily.json \
+  --input-root /PRIVATE/input --output-root /PRIVATE/days
+```
+
+The output root must already be mode 0700 and outside Git. Recordings are sorted
+by recording instant, with source identity as a deterministic tie-break. Source
+hashes, private ownership/modes, safe paths, source-bound edits, Opus codec/mono
+format/duration and full decoding are checked. ZIP members recover byte-exactly.
+Transcript speech remains literal fenced text; no summary is generated. Duplicate
+source identities, unverified dates, missing/changed sources, lexical formatting
+rewrites, and updates omitting an earlier recording fail closed.
+
+Both daily files and a provenance manifest live in an immutable
+`.revisions/YYYYMMDD/INPUT_MANIFEST_HASH/` directory. A single atomic symlink swap
+selects a complete revision for the dated folder. **Reader contract:** call
+`daily.resolve_day(output_root, day)` once (it verifies both output hashes), then
+open both files through that returned immutable revision path. Resolving the daily
+symlink separately for each file can mix revisions if a late arrival publishes
+between those reads; the symlink alone does not provide a multi-open transaction.
+Late logs can publish a new revision without deleting earlier ones. Failed private builds are retained;
+existing unrelated directories are never replaced. Neither this assembler nor
+its successful return establishes encrypted backup: its receipt explicitly says
+`backup_verified: false`. Back up the actual revision tree (not just the symlinks),
+prove recovery, and only then apply a separately identity-verified temporary-source
+cleanup policy. It never deletes raw audio or changes the existing sync/snapshot
+jobs. Unattended intake, cloud editing, backup integration and phone selection
+remain pending; do not advertise this component as a live nightly workflow.
+
 ## Initial measurements (13 November 2026)
 
 On Aether with the pinned model/image and 1.5-CPU/two-thread settings:
