@@ -5,7 +5,9 @@ import subprocess
 import tarfile
 
 SOURCE = Path(__file__).resolve().parent
-FILES = ['trial.py', 'trial.lock.json', 'test_trial.py', 'README.md']
+FILES = {name: SOURCE/name for name in ['trial.py', 'trial.lock.json', 'test_trial.py',
+    'review.py', 'test_review.py', 'README.md']}
+FILES['transcript-review.SKILL.md'] = SOURCE.parents[1]/'.agents/skills/uncertain-transcript-review/SKILL.md'
 SSH = ['ssh', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', 'aether']
 
 
@@ -18,8 +20,8 @@ def deploy():
     process = subprocess.Popen(SSH + ['umask 077; tar --no-same-owner -xf - -C /opt/life-atlas-audio'], stdin=subprocess.PIPE)
     try:
         with tarfile.open(fileobj=process.stdin, mode='w|') as archive:
-            for name in FILES:
-                archive.add(SOURCE/name, arcname=name, recursive=False)
+            for name, path in FILES.items():
+                archive.add(path, arcname=name, recursive=False)
         process.stdin.close()
         if process.wait(timeout=60):
             raise RuntimeError('Trial source transfer failed')

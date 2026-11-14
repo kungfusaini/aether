@@ -119,7 +119,7 @@ def engine_args(lock, inputs, outputs, name):
         deadline_script(limits['timeout_seconds']),
         'trial', 'whisper-cli', '-m', '/models/' + lock['model']['filename'],
         '-f', '/input/input.wav', '-l', 'en', '-t', str(limits['threads']),
-        '-otxt', '-oj', '-of', '/output/transcript', '-np', '-ng']
+        '-otxt', '-ojf', '-of', '/output/transcript', '-np', '-ng']
 
 
 def word_error_rate(reference, hypothesis):

@@ -89,6 +89,76 @@ so existing registry logins are neither read nor changed.
 Model/asset download URLs and private diagnostics are suppressed on failures;
 inspect only the necessary protected state, never dump private logs into chat.
 
+## Uncertainty-preserving review (manual, not a cloud pipeline)
+
+The project skill is [uncertain-transcript-review](../../.agents/skills/uncertain-transcript-review/SKILL.md).
+Pi discovers it when working in this repository; another workspace can explicitly
+read that canonical file. It is not installed as a global skill or authority to
+read more private content. Deployment copies its policy to
+`/opt/life-atlas-audio/transcript-review.SKILL.md` for reference, not automatic
+agent registration on the server.
+
+Future explicit ASR runs request full JSON (`-ojf`) so token probabilities are
+retained where the engine supplies them. Existing trial files are not rewritten
+or rerun. These probabilities are not calibrated word accuracy; a token p<0.5 is
+only an initial review-priority heuristic. Missing token information is reported
+as unavailable. Timestamps anchor ASR-input segments, not exact words; cropped
+snippets need a separately recorded actual source offset before using whole-file
+times. Do not infer offsets from text.
+
+`review.py` is a standard-library-only **local artifact helper**. It does not call
+an LLM, make network requests, listen to audio, start another ASR pass, or send
+anything to this chat. Its outputs contain private speech text even though its
+console output contains only operation/path/count metadata. Obtain explicit
+model-context sharing permission before reading a private packet into an agent.
+
+After authorization, use an already-existing caller-owned mode-0700 output
+parent outside Git. Output directories must be fresh:
+
+```sh
+python3 review.py packet /PRIVATE/asr.json --compare /PRIVATE/other-asr.json --out /PRIVATE/new-packet
+python3 review.py render /PRIVATE/asr.json --proposal /PRIVATE/proposal.json --out /PRIVATE/new-render
+```
+
+The optional comparison flags segments with normalized token disagreement using
+bounded sequence matching; it does not vote for a correct transcript. Comparisons
+over 10,000 tokens fail rather than spending unbounded CPU. Token scores can be
+wrong even when high; two ASR runs can agree and still be wrong.
+
+A packet has `packet.json` and an empty `proposal.template.json`. Proposals are
+source-hash-bound edits using original segment IDs and Python character offsets.
+Each edit must include a reason and one of these types:
+
+- `format`: must retain the lexical signature (including ordinary negations,
+  signed numbers and significant currency/percent symbols). This is a conservative
+  syntax guard, not proof of unchanged semantics.
+- `guess`: always rendered as `[best guess? @00:43]`.
+- `unclear`: always rendered as `[unclear @00:43]`; no hidden replacement allowed.
+
+Rendering produces `reading-draft.md`, `edit-ledger.json` and `provenance.json`.
+The ledger preserves exact replaced spans, kinds/reasons and source anchors.
+Transcript/replacement text is rendered in a literal fenced block whose delimiter
+is longer than any backtick run in the text. HTML comments/images and Markdown
+inside speech/guesses therefore cannot hide annotations or make preview requests;
+none of that text is executable code. JSON values are also untrusted text, not
+HTML for direct insertion by a future UI.
+Overlapping/duplicate edits, unknown types, stale source hashes, empty reasons,
+unbracketed lexical substitutions and private output under Git are rejected.
+No edits are declared verified verbatim. The raw ASR files stay untouched.
+Review successful command completion: failed partial output is not accepted.
+
+Names, dates, numbers, negations and statements about the speaker must not be
+silently reconstructed. A fluent reading draft is not evidence of exact speech.
+Preserve speaker hesitations and uncertainty rather than importing generic
+prose-humanization rules. A stronger-model retry of a short important span is
+an optional future approved action, not implemented or scheduled here.
+
+The policy adapts [oral-history guidance](https://www.ufic.ufl.edu/ogl/spohp-styleguide.pdf),
+[W3C accurate transcription guidance](https://www.w3.org/WAI/media/av/transcribing/),
+and [confidence-guided correction research](https://arxiv.org/abs/2509.25048).
+The marker syntax is a project convention. Research results on other speech
+populations do not establish accuracy improvements on these recordings.
+
 ## Initial measurements (13 November 2026)
 
 On Aether with the pinned model/image and 1.5-CPU/two-thread settings:

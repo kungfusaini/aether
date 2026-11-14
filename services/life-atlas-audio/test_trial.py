@@ -21,6 +21,7 @@ class TrialTests(unittest.TestCase):
                             ('--log-driver', 'none'), ('--memory', '1536m'), ('--cpus', '1.5')]:
             self.assertEqual(args[args.index(flag)+1], value)
         self.assertIn('--read-only', args)
+        self.assertIn('-ojf', args)
         self.assertNotIn('--privileged', args)
         self.assertNotIn('-p', args)
         mounts = [args[i+1] for i, v in enumerate(args) if v == '--mount']
