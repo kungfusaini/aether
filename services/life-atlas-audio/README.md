@@ -1,9 +1,10 @@
 # Private audio transcription and review
 
-Quality trials and a separately approved **one-off full three-log batch** are
-explicitly invoked, not an automatic transcription workflow. There is no timer,
-public endpoint, new upload rule or automatic backfill. A manual batch service
-template lets the approved long-running job survive an SSH disconnect.
+Quality trials and the **one-off full three-log batch** remain explicitly scoped
+manual commands. A separate approved arrival-processing worker (`automation.py`)
+now supports selected-file nightly intake and the text-only laptop review queue;
+it does not relax the pilot/three-log runners or backfill old recordings. There
+is no public endpoint. See the automatic workflow section for setup and limits.
 
 ## Engine and reproducibility
 
@@ -227,7 +228,7 @@ and [confidence-guided correction research](https://arxiv.org/abs/2509.25048).
 The marker syntax is a project convention. Research results on other speech
 populations do not establish accuracy improvements on these recordings.
 
-## Daily output assembly (not yet an automatic pipeline)
+## Daily output assembly
 
 `daily.py` assembles already-transcribed, explicitly reviewed recordings into
 `YYYYMMDD/transcript.md` and `YYYYMMDD/audio.zip`. This component performs no
@@ -289,8 +290,83 @@ its successful return establishes encrypted backup: its receipt explicitly says
 `backup_verified: false`. Back up the actual revision tree (not just the symlinks),
 prove recovery, and only then apply a separately identity-verified temporary-source
 cleanup policy. It never deletes raw audio or changes the existing sync/snapshot
-jobs. Unattended intake, cloud editing, backup integration and phone selection
-remain pending; do not advertise this component as a live nightly workflow.
+jobs. The assembler alone is not a complete workflow; the separate automation
+layer below provides intake, review-queue acceptance and encrypted preservation.
+
+## Approved automatic selected-log workflow
+
+`automation.py` and `life-atlas-audio-intake.{service,timer}` are separate from the
+explicit pilot/three-log interfaces. Runtime configuration is root-private at
+`/etc/life-atlas-audio/automation.json`: schema 1, enabled boolean, observed phone
+`timezone`, descriptive `timezone_basis`, offset-aware `not_before`, and
+`excluded_names` for already-archived recordings. The scanner refuses to inspect
+incoming files before `not_before`; use that to reserve a real recording for a
+natural scheduled overnight test, never manually start it.
+
+Only complete, root-level, supported audio filenames beginning with `log`
+(case-insensitive) are accepted. Syncthing both-end rooted first-match allowlists
+must be installed BEFORE pointing the phone share at Recorder. Exclude old
+already-archived filenames; do not silently backfill. Existing server reception
+remains once daily, 01:00–02:00 Europe/London. The intake timer checks arrival
+state every minute, not more frequent uploads. Temporary transfer filenames,
+symlinks and unsupported/oversized/over-hour files are rejected. Per-source
+failures do not starve independent valid files; an unresolved inference launch
+intent remains a global fail-closed barrier needing explicit reconciliation.
+
+Preserved phone file save time (mtime), interpreted in the verified configured
+phone timezone, determines day/order. It is **not exact speech start**. Timezone
+is observed at setup, not embedded historical recording-zone evidence and not
+automatically refreshed during travel; capture/update it before relying on a new
+travel timezone. In particular, do not claim dynamic phone-local grouping across
+travel from this first London overnight test.
+
+The worker hash-verifies a private staging copy, probes duration, verifies pinned
+model identity and memory headroom, then uses the existing sequential full-source
+ASR/deadline/lock/launch-intent machinery BEFORE Opus compression. It preserves
+unchanged raw ASR text/full JSON and receipts in root-private per-content jobs at
+`/srv/audio-archive/automation/jobs/SOURCE_SHA256/`. Immutable source identity
+skips repeat deliveries; changed content gets a separate job. Ordinary failures
+retain evidence and never overwrite accepted output. There is no stronger-model
+retry or external audio API.
+
+The managed laptop's text-only Pi bridge uses these machine-facing commands:
+
+```sh
+python3 -B automation.py pending
+python3 -B automation.py packet SOURCE_SHA256  # PRIVATE text: capture, never print in chat
+python3 -B automation.py accept SOURCE_SHA256  # private JSON proposal/receipt on stdin
+python3 -B automation.py finish SOURCE_SHA256
+```
+
+`pending` exposes identities/status only. `packet` is private raw transcript text.
+`accept` requires the approved exact provider/model, packet/source/proposal hashes,
+and successful source-bound edit rendering. A deterministic rejected proposal is
+explicitly identified so the bridge can use bounded regeneration; transport errors
+must reuse rather than silently rerun the model. No summaries or life analysis.
+
+Finalization assembles `/srv/audio-archive/daily/YYYYMMDD/{transcript.md,audio.zip}`
+with old revisions retained. It backs up actual daily revision directories and
+compact jobs (raw ASR, edited draft, edit ledger, model/codec/source receipts and
+Opus), never full incoming/staging WAVs. Every retained current-job/revision file
+is byte-exactly recovered from that snapshot and restic full read-data checking
+passes before deleting only exact worker-owned staged source/PCM. A completion
+receipt outside that snapshot binds its ID; subsequent backups preserve it.
+Late arrivals publish another same-day revision without dropping existing logs.
+
+**Incoming Syncthing originals are deliberately retained** to avoid an unproven
+receive-only deletion/reupload strategy. Phone/Downloads originals remain intact.
+Disable the legacy incoming-raw snapshot timer when enabling this compact-payload
+preservation path; keep the independent upload-window timer unchanged. Intake and
+backup require at least 10 GB free, with no automatic history pruning. Incoming
+raw retention still needs a later no-reupload retention policy; this test does
+not solve long-term server raw growth or independent off-server backup.
+
+The laptop bridge waits while asleep/offline or logged out, and retries pending
+work when available; it does not force wakeup. Server intake runs independently.
+Content-free service health is at `automation/health/`; completion receipts carry
+exact snapshots/revisions. A timer being active is not proof a real recording
+completed: verify source identity, recorded job phases, published files and
+recovered snapshot before claiming success. Preserve unrelated WhatsApp/GPS sync.
 
 ## Initial measurements (13 November 2026)
 
@@ -318,6 +394,6 @@ for Sumeet without routing transcript text through agent/tool output. Neither th
 public result nor successful private execution establishes private word accuracy,
 performance on long recordings or workflow/reboot reliability.
 
-Future workflow decisions—quality threshold/model choice, log-prefix selection,
-nightly scheduling, raw-vs-compressed transcription order, idempotency/retries,
-transcript correction/provenance and backup—are intentionally not implemented.
+These initial measurements predate the separately approved automation above.
+Stronger-model selection, historical/dynamic travel timezone capture, incoming
+raw-retention policy and independent off-server backup remain separate work.

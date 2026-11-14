@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for complete selected audio arrivals (upload window remains once daily)
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=1min
+AccuracySec=10s
+Unit=life-atlas-audio-intake.service
+
+[Install]
+WantedBy=timers.target
