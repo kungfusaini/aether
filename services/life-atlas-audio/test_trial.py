@@ -54,6 +54,32 @@ class TrialTests(unittest.TestCase):
                 trial.cleanup_container('unrelated-service')
             command.assert_not_called()
 
+    def test_engine_guard_refuses_orphan_and_concurrent_jobs(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(trial, 'STATE', Path(directory)):
+            with patch.object(trial, 'checked', return_value=b'owned-orphan-container'):
+                with self.assertRaises(RuntimeError):
+                    with trial.engine_guard():
+                        self.fail('Must not start inference with an orphan')
+            with patch.object(trial, 'checked', return_value=b''):
+                with trial.engine_guard():
+                    with self.assertRaises(RuntimeError):
+                        with trial.engine_guard():
+                            self.fail('Must not overlap local jobs')
+                with trial.engine_guard():
+                    pass
+
+    def test_launch_intent_survives_interruption_before_container_registration(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(trial, 'STATE', Path(directory)):
+            with patch.object(trial, 'checked', return_value=b'') as probe:
+                with self.assertRaises(KeyboardInterrupt):
+                    with trial.engine_guard():
+                        self.assertTrue((Path(directory)/'transcription-control/launch-intent.json').exists())
+                        raise KeyboardInterrupt()  # Supervisor dies before any container is visible.
+                with self.assertRaisesRegex(RuntimeError, 'launch intent'):
+                    with trial.engine_guard():
+                        self.fail('Must not start a second launch after a lost supervisor')
+                self.assertEqual(probe.call_count, 1)
+
     def test_public_quality_metric(self):
         self.assertEqual(trial.word_error_rate('Ask not!', 'ask not'), 0)
         self.assertEqual(trial.word_error_rate('one two three', 'one three'), 1/3)

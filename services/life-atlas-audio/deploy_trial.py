@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Deploy only trial code/config using approved trusted SSH; no private content transfer."""
+"""Deploy approved local audio tools and inactive batch unit; no private content transfer."""
 from pathlib import Path
 import subprocess
 import tarfile
 
 SOURCE = Path(__file__).resolve().parent
 FILES = {name: SOURCE/name for name in ['trial.py', 'trial.lock.json', 'test_trial.py',
-    'review.py', 'test_review.py', 'README.md']}
+    'review.py', 'test_review.py', 'batch.py', 'test_batch.py',
+    'life-atlas-audio-batch@.service', 'README.md']}
 FILES['transcript-review.SKILL.md'] = SOURCE.parents[1]/'.agents/skills/uncertain-transcript-review/SKILL.md'
 SSH = ['ssh', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', 'aether']
 
@@ -30,7 +31,12 @@ def deploy():
             process.kill()
     subprocess.run(SSH + ['set -eu; chown -R root:root /opt/life-atlas-audio; '
         'chmod 600 /opt/life-atlas-audio/*; cd /opt/life-atlas-audio; '
-        'python3 -B -m unittest -v; python3 -B trial.py install'], check=True)
+        'python3 -B -m unittest -v; python3 -B trial.py install; '
+        'install -d -m 700 /srv/audio-archive/transcription-batches; '
+        'install -d -m 700 /srv/audio-archive/transcription-control; '
+        'install -m 644 life-atlas-audio-batch@.service /etc/systemd/system/life-atlas-audio-batch@.service; '
+        'systemd-analyze verify /etc/systemd/system/life-atlas-audio-batch@.service; '
+        'systemctl daemon-reload'], check=True)
 
 
 if __name__ == '__main__':

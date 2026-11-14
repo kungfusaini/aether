@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Explicit quality trials only; private content never goes to stdout or the network."""
 import argparse
+from contextlib import contextmanager
+import fcntl
 import datetime as dt
 import hashlib
 import json
@@ -87,6 +89,54 @@ def deadline_script(seconds):
         raise RuntimeError('Invalid container deadline')
     return ('timeout --signal=TERM --kill-after=5s ' + str(seconds) + 's "$@"; '
         'result=$?; cat /sys/fs/cgroup/memory.peak > /output/memory-peak.txt; exit "$result"')
+
+
+@contextmanager
+def engine_guard():
+    control = STATE / 'transcription-control'
+    private_dir(control)
+    path = control / 'engine.lock'
+    intent = control / 'launch-intent.json'
+    if path.is_symlink():
+        raise RuntimeError('Unsafe inference lock')
+    probe = ['docker', 'ps', '-a', '--filter', 'label=life-atlas.audio-trial=1', '--format', '{{.Names}}']
+    with path.open('a') as lock:
+        os.fchmod(lock.fileno(), 0o600)
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError('Another local transcription job is active')
+        # Persist intent BEFORE a Docker CLI can be spawned. A supervisor can die
+        # while the daemon is still creating an invisible container; an empty
+        # docker ps result alone is therefore not sufficient for safe restart.
+        if intent.exists() or intent.is_symlink():
+            raise RuntimeError('Unresolved inference launch intent requires explicit recovery')
+        if checked(probe, timeout=15).strip():
+            raise RuntimeError('Existing owned inference container requires recovery before another job')
+        scope = uuid.uuid4().hex
+        with intent.open('x') as out:
+            os.fchmod(out.fileno(), 0o600)
+            json.dump({'scope':scope, 'pid':os.getpid(), 'created_at':dt.datetime.now(dt.timezone.utc).isoformat()}, out)
+            out.flush(); os.fsync(out.fileno())
+        directory = os.open(control, os.O_RDONLY | os.O_DIRECTORY)
+        try: os.fsync(directory)
+        finally: os.close(directory)
+        try:
+            yield
+        except BaseException:
+            # Retain intent even with no visible container: a killed/timed-out
+            # Docker client can leave an in-flight daemon request. Never expire
+            # this marker or silently resume; inspect/reconcile explicitly.
+            raise
+        else:
+            if checked(probe, timeout=15).strip():
+                raise RuntimeError('Owned container remains; launch intent retained')
+            if intent.is_symlink() or json.loads(intent.read_text()).get('scope') != scope:
+                raise RuntimeError('Inference intent identity changed')
+            intent.unlink()
+            directory = os.open(control, os.O_RDONLY | os.O_DIRECTORY)
+            try: os.fsync(directory)
+            finally: os.close(directory)
 
 
 def cleanup_container(name):
@@ -178,16 +228,17 @@ def run_trial(lock, source=None, original_sha256=None):
         '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', str(inputs / 'input.wav')])
     clip = json.loads(checked(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', str(inputs / 'input.wav')]))
     name = 'life-atlas-audio-trial-' + uuid.uuid4().hex
-    started = time.monotonic()
-    try:
-        with (run / 'engine-private.log').open('wb') as log:
-            result = subprocess.run(engine_args(lock, inputs, outputs, name), stdout=log, stderr=log, timeout=lock['limits']['timeout_seconds'] + 30)
-        if result.returncode:
-            raise RuntimeError('Trial engine failed; inspect protected server state, not transcript logs')
-    finally:
-        # Only this randomly named task-owned container; never touch other services.
-        cleanup_container(name)
-    elapsed = time.monotonic() - started
+    with engine_guard():
+        started = time.monotonic()
+        try:
+            with (run / 'engine-private.log').open('wb') as log:
+                result = subprocess.run(engine_args(lock, inputs, outputs, name), stdout=log, stderr=log, timeout=lock['limits']['timeout_seconds'] + 30)
+            if result.returncode:
+                raise RuntimeError('Trial engine failed; inspect protected server state, not transcript logs')
+        finally:
+            # Only this randomly named task-owned container; never touch other services.
+            cleanup_container(name)
+        elapsed = time.monotonic() - started
     text_path = outputs / 'transcript.txt'
     json_path = outputs / 'transcript.json'
     text = text_path.read_text()
@@ -221,7 +272,7 @@ def run_trial(lock, source=None, original_sha256=None):
 def deadline_self_test(lock):
     # No private audio, transcription or model load: prove a container's own
     # deadline terminates its child independently of the SSH/Python client timer.
-    with tempfile.TemporaryDirectory(prefix='audio-deadline-test-') as directory:
+    with engine_guard(), tempfile.TemporaryDirectory(prefix='audio-deadline-test-') as directory:
         root = Path(directory)
         inputs = root / 'input'; outputs = root / 'output'
         inputs.mkdir(); outputs.mkdir()

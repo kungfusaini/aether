@@ -1,7 +1,9 @@
-# Private audio transcription quality trial
+# Private audio transcription and review
 
-This is an explicitly invoked trial, **not an automatic transcription workflow**.
-There is no service/timer, public endpoint, new upload rule or automatic backfill.
+Quality trials and a separately approved **one-off full three-log batch** are
+explicitly invoked, not an automatic transcription workflow. There is no timer,
+public endpoint, new upload rule or automatic backfill. A manual batch service
+template lets the approved long-running job survive an SSH disconnect.
 
 ## Engine and reproducibility
 
@@ -83,11 +85,77 @@ ssh aether 'cd /opt/life-atlas-audio && python3 -B trial.py pilot-raw --source /
 `deploy_trial.py` transfers only an explicit source/config/test/docs allowlist,
 then installs hash-verified public assets. It does not read or transfer private
 recordings or outputs, restart existing services, install a timer, modify Syncthing,
-or touch WhatsApp. Image pulling uses a task-owned empty Docker client config
+or touch WhatsApp. It installs the inactive manual full-batch service template;
+it does not start or enable any instance. Image pulling uses a task-owned empty Docker client config
 so existing registry logins are neither read nor changed.
 
 Model/asset download URLs and private diagnostics are suppressed on failures;
 inspect only the necessary protected state, never dump private logs into chat.
+
+## Explicit full three-log batch
+
+`batch.py` is separate from the 90-second trial runner. It accepts only
+`log001.wav`, `log002.wav` and `log003.wav`, in that order, from private staging
+with a runtime manifest containing their previously approved SHA-256/size and
+full durations. No private manifest or transcript belongs in Git. File durations
+are limited to one hour each; the current selection is about 58 minutes total.
+
+Staging layout: `/srv/audio-archive/staging/full-logs-YYYYMMDD/` containing the
+three exact originals plus `source-manifest.json`. Model/image configuration is
+the existing pinned `trial.lock.json`; no new model or larger inference setting
+is selected by the batch.
+
+The worker decodes the **whole source**, not 90 seconds, to 16 kHz mono PCM
+under that same temporary staging root, then transcribes sequentially with the
+existing 1.5-CPU/two-thread/1.5-GiB container restrictions. Full-file containers
+have a separate independent two-hour deadline/termination grace. The trial's
+15-minute deadline and excerpt restrictions are not relaxed. Runtime model pulls
+are disabled. A 1.8-GiB available-memory check runs before each new file.
+
+A private singleton lock prevents simultaneous full batches. A shared inference
+lock also coordinates pilots and full runs. A fsynced launch-intent marker is
+published before any Docker CLI can start, closing the invisible-container launch
+window after supervisor death. A surviving intent or owned container refuses
+new inference, even if Docker currently lists no containers. Intent is removed
+only after normal scope completion and verified cleanup. Interrupted/failed scopes
+retain it for explicit recovery; it is never expired automatically. Inspect the
+prior worker/container and pending launch state before clearing a task-owned marker.
+The worker does not silently overlap or terminate another job. Control metadata
+lives privately under `/srv/audio-archive/transcription-control/`.
+Per-file completion receipts record source/model/image/duration, exact output
+hashes, timings, container peak RAM and temporary PCM identity. Artifacts and their
+ancestor directory entries are fsynced before publishing a completion receipt;
+atomic progress replacements also fsync their parent directory. On resume, only
+outputs passing those checks are skipped. Changed manifests/config/sources or tampered completed
+outputs are rejected; failed attempts are retained rather than overwritten.
+Progress contains metadata only, never transcript text.
+
+Results live under `/srv/audio-archive/transcription-batches/full-logs-YYYYMMDD/`.
+The worker finishes at `transcribed-awaiting-editorial-review`, **not complete**.
+Editorial drafts/ledgers, encrypted backup/restore verification and source-identity
+checks must follow before deleting only the verified batch-owned staged originals
+and PCM files. The worker does not delete source audio or invoke a cloud editor.
+Keep the existing compact Opus archive; do not back up staging WAVs by including
+the staging parent in restic. Phone originals are never modified.
+
+`life-atlas-audio-batch@.service` is a manual template, not enabled or scheduled.
+It runs with protected system/home, private network/devices/tmp, a private empty
+Docker client config, low CPU/I/O priority and a 512-MiB supervisor/decoder limit.
+The engine has its own separate container limits; Docker daemon access is trusted
+host administration, not a claim that the supervisor is a security sandbox.
+Stopping the worker requests cleanup; a lost/killed supervisor still leaves the
+container-side deadline. No other containers/services are stopped.
+
+```sh
+# Only after the exact originals and manifest have been transferred/verified:
+ssh aether systemctl start --no-block life-atlas-audio-batch@full-logs-YYYYMMDD.service
+# Metadata-only progress (do not dump engine-private.log):
+ssh aether 'cat /srv/audio-archive/transcription-batches/full-logs-YYYYMMDD/status.json'
+```
+
+`source-manifest.json` schema is `{ "batch_id": "full-logs-YYYYMMDD", "files": [...] }`;
+each file has `name`, `size`, `sha256` and `duration_seconds`. Identifiers and source
+hashes are runtime evidence, not credentials or guessed values.
 
 ## Uncertainty-preserving review (manual, not a cloud pipeline)
 
