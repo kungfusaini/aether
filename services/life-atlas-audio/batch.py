@@ -14,6 +14,7 @@ import sys
 import time
 import uuid
 import trial
+import glossary
 
 NAMES = ['log001.wav', 'log002.wav', 'log003.wav']
 MAX_SECONDS = 3600
@@ -89,13 +90,20 @@ def verified_source(stage, item):
     return source
 
 
-def full_engine_args(lock, inputs, outputs, name, batch_id):
+def full_engine_args(lock, inputs, outputs, name, batch_id, with_names=False):
     # Keep the pilot's 90-second source limits and 15-minute deadline unchanged.
     # Only this separate full-file runner gets the explicit two-hour deadline.
     args = trial.engine_args(lock, inputs, outputs, name)
     args[2:2] = ['--pull', 'never']
     index = args.index('-c')
-    args[index+1] = ('nice -n 10 timeout --signal=TERM --kill-after=5s 7200s "$@"; '
+    # Read private vocabulary inside the container, never interpolate it into
+    # Docker's host arguments/inspect command or shell source. Native whisper
+    # still receives its supported prompt argument inside the trusted container.
+    prefix = ('name_prompt=$(cat /input/names-prompt.txt) || exit 65; '
+              '[ -n "$name_prompt" ] || exit 65; '
+              'set -- "$@" --prompt "$name_prompt" --carry-initial-prompt; '
+              if with_names else '')
+    args[index+1] = prefix + ('nice -n 10 timeout --signal=TERM --kill-after=5s 7200s "$@"; '
         'result=$?; cat /sys/fs/cgroup/memory.peak > /output/memory-peak.txt; exit "$result"')
     image_index = args.index(lock['image'])
     args[image_index:image_index] = ['--label', 'life-atlas.audio-batch=' + batch_id]
@@ -118,13 +126,18 @@ def decode_args(source, pcm):
         '-map_metadata', '-1', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', str(pcm)]
 
 
-def transcribe(item, source, stage, output_root, lock, batch_id):
+def transcribe(item, source, stage, output_root, lock, batch_id, name_hints=None):
     available = int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:'))) * 1024
     require(available >= 1800*1024*1024, 'Insufficient memory headroom; batch can be resumed')
     attempt = uuid.uuid4().hex
     inputs = stage/'converted'/Path(item['name']).stem/attempt
     outputs = output_root/Path(item['name']).stem/attempt/'output'
     trial.private_dir(inputs); trial.private_dir(outputs)
+    hints = glossary.validate(name_hints if name_hints is not None else [])
+    if hints:
+        with (inputs/'names-prompt.txt').open('x') as stream:
+            os.fchmod(stream.fileno(), 0o600)
+            stream.write(glossary.prompt(hints)); stream.flush(); os.fsync(stream.fileno())
     pcm = inputs/'input.wav'
     trial.checked(decode_args(source, pcm), timeout=300)
     info = json.loads(trial.checked(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', str(pcm)]))
@@ -136,7 +149,7 @@ def transcribe(item, source, stage, output_root, lock, batch_id):
     started = time.monotonic()
     try:
         with (outputs.parent/'engine-private.log').open('xb') as log:
-            result = subprocess.run(full_engine_args(lock, inputs, outputs, name, batch_id),
+            result = subprocess.run(full_engine_args(lock, inputs, outputs, name, batch_id, with_names=bool(hints)),
                 stdout=log, stderr=log, timeout=DEADLINE_SECONDS+30)
         require(result.returncode == 0, 'Full transcription failed; inspect only protected operational state')
     finally:
@@ -158,6 +171,7 @@ def transcribe(item, source, stage, output_root, lock, batch_id):
         'transcript_sha256':trial.sha256(outputs/'transcript.txt'),
         'json_sha256':trial.sha256(outputs/'transcript.json'),
         'transcript_characters':len(text), 'segments':len(data['transcription']),
+        'names_prompt_sha256':trial.sha256(inputs/'names-prompt.txt') if hints else None,
         'completed_at':now()}
 
 

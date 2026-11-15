@@ -18,9 +18,11 @@ import batch
 import daily
 import review
 import trial
+import glossary
 
 ROOT = trial.STATE
 CONFIG = Path('/etc/life-atlas-audio/automation.json')
+NAMES_FILE = Path('/etc/life-atlas-audio/names.json')
 MODEL_PROVIDER = 'openai-codex'
 MODEL_ID = 'gpt-6.1-sol'
 EXTENSIONS = {'wav', 'm4a', 'aac', 'mp3', 'ogg', 'opus', 'flac', 'amr', '3gp', 'mp4', 'aiff', 'aif'}
@@ -113,6 +115,12 @@ def process_source(path, cfg):
             'day': stamp.strftime('%Y%m%d'), 'date_basis': 'phone-recording-metadata',
             'timestamp_basis': 'Syncthing-preserved phone recording file save time, not exact speech start',
             'timezone': cfg['timezone'], 'timezone_basis': cfg['timezone_basis']}
+        # Freeze vocabulary only for newly created source jobs. Existing jobs
+        # retain their original context; a later glossary edit is not a rerun.
+        if not (job/'names.json').exists():
+            save(job/'names.json', glossary.read(NAMES_FILE, missing_ok=True))
+        glossary.read(job/'names.json')
+        info['names_sha256'] = trial.sha256(job/'names.json')
         save(info_path, info)
     if (job/'asr-receipt.json').exists() and (job/'audio-receipt.json').exists():
         validate_job(job)
@@ -131,15 +139,18 @@ def process_source(path, cfg):
     duration = probe(source)
     item = {'name': path.name, 'sha256': identity, 'size': source_stat.st_size, 'duration_seconds': duration}
     output = ROOT/'transcription-batches'/('auto-'+identity); trial.private_dir(output)
+    hints = frozen_names(job)
     lock = trial.read_lock()
     require(trial.sha256(trial.STATE/'models'/lock['model']['filename']) == lock['model']['sha256'])
     if (job/'asr-receipt.json').exists():
         receipt = batch.verify_completed(json.loads((job/'asr-receipt.json').read_text()), item, lock)
+        require(receipt.get('names_sha256') == info.get('names_sha256'))
     else:
         available = int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:'))) * 1024
         require(available >= 1800*1024*1024)
         with trial.engine_guard():
-            receipt = batch.transcribe(item, source, stage, output, lock, 'auto-'+identity)
+            receipt = batch.transcribe(item, source, stage, output, lock, 'auto-'+identity, name_hints=hints or [])
+            receipt['names_sha256'] = info.get('names_sha256')
             batch.persist_artifacts(receipt, output)
             save(job/'asr-receipt.json', receipt)
     # Immutable copies for queue/backup; original raw ASR remains untouched.
@@ -169,11 +180,25 @@ def process_source(path, cfg):
     return identity
 
 
+def frozen_names(job):
+    info = json.loads((job/'source.json').read_text())
+    if 'names_sha256' not in info:
+        return None  # Pre-feature job: do not consult mutable current vocabulary.
+    require(trial.sha256(job/'names.json') == info['names_sha256'])
+    return glossary.read(job/'names.json')['names']
+
+
 def validate_job(job):
     asr = json.loads((job/'asr-receipt.json').read_text())
     audio = json.loads((job/'audio-receipt.json').read_text())
     require(asr['source_sha256'] == job.name and trial.sha256(job/'raw.json') == asr['json_sha256'] and
             trial.sha256(job/'raw.txt') == asr['transcript_sha256'] and trial.sha256(job/'audio.opus') == audio['sha256'])
+    info = json.loads((job/'source.json').read_text())
+    hints = frozen_names(job)
+    require(asr.get('names_sha256') == info.get('names_sha256'))
+    if hints is not None:
+        expected_prompt = hashlib.sha256(glossary.prompt(hints).encode()).hexdigest() if hints else None
+        require(asr.get('names_prompt_sha256') == expected_prompt)
     return asr, audio
 
 
@@ -219,7 +244,11 @@ def pending():
 def packet(identity):
     job = job_path(identity)
     validate_job(job)
-    return review.packet(job/'raw.json')
+    result = review.packet(job/'raw.json')
+    hints = frozen_names(job)
+    if hints is not None:
+        result['name_hints'] = hints
+    return result
 
 
 def accept(identity, payload):
@@ -236,6 +265,9 @@ def accept_locked(identity, payload):
     require(receipt['provider'] == MODEL_PROVIDER and receipt['model'] == MODEL_ID and
             receipt['status'] == 'proposed-awaiting-server-validation' and receipt['audio_shared'] is False)
     raw, raw_hash = review.read_json(job/'raw.json')
+    hints = frozen_names(job)
+    if hints is not None:
+        require(receipt.get('name_hints_sha256') == hashlib.sha256(json.dumps(hints, ensure_ascii=False).encode()).hexdigest())
     require(receipt['source_sha256'] == raw_hash and receipt['packet_sha256'] == hashlib.sha256(
         json.dumps(packet(identity), ensure_ascii=False).encode()).hexdigest())
     # Bridge sends exact proposal bytes separately hash-bound to its receipt.
@@ -315,6 +347,8 @@ def finish(identity):
         asr = json.loads((job/'asr-receipt.json').read_text())
         stage = ROOT/'staging'/('auto-'+identity)
         targets = [(stage/info['source_name'], identity), (Path(asr['pcm_path']), asr['pcm_sha256'])]
+        if asr.get('names_prompt_sha256') is not None:
+            targets.append((Path(asr['pcm_path']).with_name('names-prompt.txt'), asr['names_prompt_sha256']))
         for path, expected in targets:
             require(not path.is_symlink() and path.resolve().is_relative_to(stage))
             if path.exists():

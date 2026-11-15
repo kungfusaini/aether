@@ -378,6 +378,45 @@ exact snapshots/revisions. A timer being active is not proof a real recording
 completed: verify source identity, recorded job phases, published files and
 recovered snapshot before claiming success. Preserve unrelated WhatsApp/GPS sync.
 
+## Private name vocabulary (future jobs only)
+
+Optional personal vocabulary lives in root-owned0600
+`/etc/life-atlas-audio/names.json`, outside Git/web roots. Schema is
+`{"schema":1,"names":["Mira","Mina"]}` (fictional example). The list is candidate
+spellings, not aliases, identity mappings or proof anyone was mentioned. Keep
+personal entries out of source, Nix store, logs, worklogs and research queries.
+Missing file means no vocabulary; malformed/unsafe existing files fail closed.
+At most32 distinct case-insensitive names,48 characters each, and256 UTF-8 bytes
+of prompt are accepted. Only letters, spaces, apostrophes and hyphens are allowed.
+
+New source jobs freeze a private snapshot before ASR and bind it by hash in source
+and ASR receipts. Resume and editorial packets use that snapshot, never the
+mutable current file. Prior jobs without a snapshot keep their exact prior packet
+format/context, and completed jobs are not rerun when vocabulary changes.
+
+ASR reuses whisper.cpp's supported [`--prompt` and `--carry-initial-prompt`](https://github.com/ggml-org/whisper.cpp/blob/v1.9.5/examples/cli/cli.cpp),
+verified against the installed pinned image help. A private prompt file is read
+inside the existing isolated container; names are never interpolated into host
+Docker argv/inspect command or shell source. The native trusted ASR process still
+receives its prompt in its in-container argv and may include it in private output
+metadata/diagnostics: this is not protection from trusted host administrators.
+Do not dump process arguments, raw JSON params or diagnostics into chat/logs.
+Only the approved local engine sees audio; the approved cloud editor receives
+text and the frozen names list through its private stdin packet.
+
+The editor treats names as spelling hints only, keeps similar candidates distinct,
+and must bracket lexical name repairs or leave ambiguity unresolved. Server edit
+validation still rejects lexical changes labelled formatting. Prompting can bias
+recognition/hallucinate names; structural tests and an unrelated public-speech
+smoke test do NOT establish improvement on personal names. No extra model, audio
+rerun, deterministic replacements, summaries or broader analysis are introduced.
+
+Encrypted job backups include the frozen vocabulary. Verify its exact recovery
+along with other retained artifacts before removing the hash-identified temporary
+prompt file with worker-owned source/PCM. Back up initial runtime vocabulary
+separately when configuring it before any new jobs exist. Personal names must
+never be embedded in a Git-tracked deployment configuration.
+
 ## Initial measurements (13 November 2026)
 
 On Aether with the pinned model/image and 1.5-CPU/two-thread settings:

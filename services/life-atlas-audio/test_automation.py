@@ -66,6 +66,7 @@ class AutomationTests(unittest.TestCase):
 
     def test_accept_requires_bound_receipt_model_and_packet(self):
         job = automation.job_path('a'*64); job.mkdir(mode=0o700)
+        automation.save(job/'source.json', {})
         raw = {'transcription': [{'text': ' synthetic', 'offsets': {'from': 0, 'to': 1000}}]}
         (job/'raw.json').write_text(json.dumps(raw)); (job/'raw.json').chmod(0o600)
         raw_hash = trial.sha256(job/'raw.json')
@@ -87,6 +88,7 @@ class AutomationTests(unittest.TestCase):
 
     def test_no_lexical_rewrite_is_accepted_as_format(self):
         job = automation.job_path('a'*64); job.mkdir(mode=0o700)
+        automation.save(job/'source.json', {})
         (job/'raw.json').write_text(json.dumps({'transcription': [{'text': ' I did not go.', 'offsets': {'from': 0, 'to': 1000}}]}))
         raw_hash = trial.sha256(job/'raw.json')
         proposal = json.dumps({'source_sha256': raw_hash, 'edits': [
