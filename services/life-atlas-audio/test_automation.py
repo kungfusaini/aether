@@ -206,4 +206,20 @@ class AutomationTests(unittest.TestCase):
             self.assertEqual(automation.pending(), [])
 
 
+class IntakeUnitTests(unittest.TestCase):
+    def test_private_sync_spool_read_capability_does_not_grant_write_override(self):
+        unit = Path(__file__).with_name('life-atlas-audio-intake.service').read_text()
+        capabilities = [line.partition('=')[2].split() for line in unit.splitlines()
+                        if line.startswith('CapabilityBoundingSet=')]
+        self.assertEqual(capabilities, [['CAP_DAC_READ_SEARCH']])
+        self.assertIn('ProtectSystem=strict\n', unit)
+        self.assertIn('NoNewPrivileges=yes\n', unit)
+        writable = next(line.partition('=')[2].split() for line in unit.splitlines()
+                        if line.startswith('ReadWritePaths='))
+        self.assertEqual(set(writable), {'/srv/audio-archive/automation', '/srv/audio-archive/staging',
+            '/srv/audio-archive/transcription-batches', '/srv/audio-archive/transcription-control'})
+        self.assertNotIn('/srv/audio-archive/incoming', writable)
+        self.assertNotIn('CAP_DAC_OVERRIDE', unit)
+
+
 if __name__ == '__main__': unittest.main()

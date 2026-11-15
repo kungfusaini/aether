@@ -320,6 +320,16 @@ automatically refreshed during travel; capture/update it before relying on a new
 travel timezone. In particular, do not claim dynamic phone-local grouping across
 travel from this first London overnight test.
 
+The intake unit needs `CAP_DAC_READ_SEARCH` to read the separately owned
+Syncthing spool (directory 0700 and files 0600); root with an empty capability
+set cannot do that. This grants read/search bypass only, not `CAP_DAC_OVERRIDE`.
+Keep `ProtectSystem=strict`, the explicit worker-state writable-path allowlist,
+and incoming read-only. Do not widen private spool modes or add general write
+bypass to fix access. Regression verification must exercise a synthetic
+Syncthing-owned 0600 file under the actual unit restrictions: reading/copying into
+private staging succeeds while incoming writes remain denied. A root-shell test
+or a successful pre-window time gate alone does not establish this access.
+
 The worker hash-verifies a private staging copy, probes duration, verifies pinned
 model identity and memory headroom, then uses the existing sequential full-source
 ASR/deadline/lock/launch-intent machinery BEFORE Opus compression. It preserves

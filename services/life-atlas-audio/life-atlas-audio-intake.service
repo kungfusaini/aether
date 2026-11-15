@@ -36,7 +36,10 @@ RestrictSUIDSGID=yes
 RestrictRealtime=yes
 RestrictNamespaces=yes
 LockPersonality=yes
-CapabilityBoundingSet=
+# Read the private Syncthing-owned (0700/0600) incoming spool without
+# granting write-override capability or widening its filesystem permissions.
+# ProtectSystem=strict keeps incoming read-only; only worker state is writable.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
 RestrictAddressFamilies=AF_UNIX
 StandardOutput=journal
 StandardError=journal
