@@ -1,0 +1,41 @@
+name: Deploy Vulkan portfolio repair
+
+on:
+  push:
+    branches: [repair/vulkan-portfolio]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-vulkan:
+    runs-on: ubuntu-latest
+    steps:
+      # The committed Vulkan image has already been built and tested on Aether.
+      # Use CI's existing secrets, as the server .env is not a deployment env file.
+      - name: Recreate only Vulkan with its production settings
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          AETHER_PATH: ${{ secrets.AETHER_PATH }}
+          MAIN_EMAIL: ${{ secrets.MAIN_EMAIL }}
+          RELIQ_STUDIOS_EMAIL: ${{ secrets.RELIQ_STUDIOS_EMAIL }}
+          WELL_API_KEY: ${{ secrets.WELL_API_KEY }}
+          VULKAN_GIT_TOKEN: ${{ secrets.VULKAN_GIT_TOKEN }}
+          PROJECTS_REPO_URL: ${{ secrets.PROJECTS_REPO_URL }}
+          PROJECTS_WEBHOOK_SECRET: ${{ secrets.PROJECTS_WEBHOOK_SECRET }}
+        with:
+          host: ${{ secrets.AETHER_HOST }}
+          username: ${{ secrets.AETHER_USER }}
+          key: ${{ secrets.AETHER_SSH_KEY }}
+          envs: AETHER_PATH,MAIN_EMAIL,RELIQ_STUDIOS_EMAIL,WELL_API_KEY,VULKAN_GIT_TOKEN,PROJECTS_REPO_URL,PROJECTS_WEBHOOK_SECRET
+          script: |
+            set -eu
+            : "${AETHER_PATH:?}" "${MAIN_EMAIL:?}" "${RELIQ_STUDIOS_EMAIL:?}"
+            : "${WELL_API_KEY:?}" "${VULKAN_GIT_TOKEN:?}" "${PROJECTS_REPO_URL:?}" "${PROJECTS_WEBHOOK_SECRET:?}"
+            test "$(docker image inspect vulkan:portfolio-366e52d --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = 366e52d1be91b34dabffd509b6cc79e941b08d8d
+            docker tag vulkan:portfolio-366e52d ghcr.io/kungfusaini/vulkan:latest
+            cd "$AETHER_PATH"
+            docker compose -f docker-compose.yml -f docker-compose-prod.yml \
+              -f docker-compose-mailcow.yml -f docker-compose-plausible.yml \
+              up -d --no-deps --no-build --pull never vulkan
