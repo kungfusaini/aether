@@ -1,0 +1,19 @@
+# Add app-specific environment variables in Portainer; keep databases private.
+services:
+  web:
+    image: ${APP_IMAGE:?set by deploy.py}
+    restart: unless-stopped
+    networks: [edge]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${APP_NAME}.rule=Host(`${APP_HOST}`)
+      - traefik.http.routers.${APP_NAME}.entrypoints=web
+      - traefik.http.services.${APP_NAME}.loadbalancer.server.port=${APP_PORT}
+    mem_limit: 256m
+    pids_limit: 96
+    security_opt: [no-new-privileges:true]
+
+networks:
+  edge:
+    external: true
+    name: babbi-edge

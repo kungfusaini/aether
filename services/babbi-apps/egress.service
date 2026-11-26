@@ -1,0 +1,13 @@
+[Unit]
+Description=Block babbi-apps access to host/private networks
+Before=user@2000.service
+After=nftables.service
+PartOf=nftables.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft -f /etc/babbi-apps/egress.nft
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

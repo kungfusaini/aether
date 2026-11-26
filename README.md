@@ -151,6 +151,8 @@ This command documents the topology; a real deployment also requires host direct
 
 ## Operations
 
+- [Babbi self-service app workspace](services/babbi-apps/README.md)
+- [Starter template for her app repositories](examples/babbi-app/README.md)
 - [TLS certificate setup and renewal](docs/tls.md)
 - [Mailcow domain onboarding](scripts/mailcow-add-domain.md)
 - `scripts/setup-backup.sh` — configure backups

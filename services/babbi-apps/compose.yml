@@ -1,0 +1,85 @@
+# Run only against unix:///run/user/2000/docker.sock, never the main daemon.
+name: babbi-platform
+services:
+  edge:
+    image: traefik:v3.8.0
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=babbi-edge
+      - --entrypoints.web.address=:8080
+      - --entrypoints.web.forwardedheaders.trustedips=172.30.0.0/16
+      - --entrypoints.web.http.aliasheadersstrategy=reject
+      - --api.dashboard=false
+      - --log.level=WARN
+    ports:
+      - 127.0.0.1:18080:8080
+    volumes:
+      - /run/user/2000/docker.sock:/var/run/docker.sock:ro
+    networks: [edge]
+    mem_limit: 96m
+    pids_limit: 96
+    security_opt: [no-new-privileges:true]
+
+  portainer:
+    image: portainer/portainer-ce:2.45.4
+    restart: unless-stopped
+    command:
+      - --http-enabled
+      - --trusted-origins=https://apps.babbi.world
+      - --admin-password-file=/run/secrets/portainer_admin_password
+    ports:
+      - 127.0.0.1:19000:9000
+    volumes:
+      - /run/user/2000/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    secrets: [portainer_admin_password]
+    networks: [edge]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.portainer.rule: Host(`apps.babbi.world`)
+      traefik.http.routers.portainer.entrypoints: web
+      traefik.http.services.portainer.loadbalancer.server.port: "9000"
+    mem_limit: 192m
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+
+  demo:
+    image: public.ecr.aws/docker/library/nginx:stable-alpine
+    restart: unless-stopped
+    volumes:
+      - ./demo:/usr/share/nginx/html:ro
+    networks: [edge]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.demo.rule: Host(`demo.babbi.world`)
+      traefik.http.routers.demo.entrypoints: web
+      traefik.http.services.demo.loadbalancer.server.port: "80"
+    mem_limit: 32m
+    pids_limit: 32
+    security_opt: [no-new-privileges:true]
+
+  cloudflared:
+    profiles: [tunnel]
+    image: cloudflare/cloudflared:2026.11.2
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel_token
+    secrets: [tunnel_token]
+    networks: [edge]
+    mem_limit: 96m
+    pids_limit: 96
+    security_opt: [no-new-privileges:true]
+
+networks:
+  edge:
+    name: babbi-edge
+
+volumes:
+  portainer_data:
+
+secrets:
+  portainer_admin_password:
+    file: ./.secrets/portainer-admin-password
+  tunnel_token:
+    file: ./.secrets/tunnel-token

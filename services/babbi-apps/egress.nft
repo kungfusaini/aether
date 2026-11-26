@@ -1,0 +1,14 @@
+# Only the new rootless account's host-side network helper is restricted.
+# Never flush or modify Docker/Mailcow's tables.
+destroy table inet babbi_apps
+
+table inet babbi_apps {
+    chain output {
+        type filter hook output priority filter; policy accept;
+        meta skuid != 2000 return
+        ct state established,related return
+        # Block new connections to host-local/private infrastructure and metadata.
+        ip daddr { 0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 49.12.43.116 } reject
+        ip6 daddr { ::/128, ::1/128, fc00::/7, fe80::/10, ff00::/8, 2a01:4f8:c17:6484::/64 } reject
+    }
+}
