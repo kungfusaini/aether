@@ -54,7 +54,7 @@ services:
       - aether-network
 
   babbi_world:
-    image: ghcr.io/kungfusaini/babbi-world:latest
+    image: ${BABBI_WORLD_IMAGE:-ghcr.io/ashbreaksthecode/babbi-world:latest}
     restart: unless-stopped
     networks:
       - aether-network
