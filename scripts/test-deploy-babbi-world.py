@@ -77,6 +77,15 @@ class DeployTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 64)
                 self.assertEqual(calls, [])
 
+    def test_opaque_stateless_token_is_accepted(self):
+        result, _ = self.run_deploy(token='ghs_42.' + 'jwt-segment_' * 45 + '.signature')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_oversized_token_is_rejected(self):
+        result, calls = self.run_deploy(token='x' * 16384)
+        self.assertEqual(result.returncode, 64)
+        self.assertEqual(calls, [])
+
     def test_bot_actor_is_accepted(self):
         result, calls = self.run_deploy(command=f"deploy {SHA} dependabot[bot]")
         self.assertEqual(result.returncode, 0, result.stderr)

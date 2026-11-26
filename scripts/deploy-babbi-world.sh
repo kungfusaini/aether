@@ -16,8 +16,9 @@ repository=ghcr.io/ashbreaksthecode/babbi-world
 candidate="$repository:$revision"
 
 # The only credential is the current Actions run's short-lived GITHUB_TOKEN.
-# Bound both the input length and wait time; never echo it or put it in argv.
-if ! IFS= read -r -t 15 -n 1024 token || [[ ! $token =~ ^[A-Za-z0-9_]{20,1023}$ ]]; then
+# Treat tokens as opaque (installation tokens may contain JWT punctuation).
+# Bound only transport size/time and reject whitespace; never echo or use argv.
+if ! IFS= read -r -t 15 -n 16384 token || [[ -z $token || ${#token} -ge 16384 || $token =~ [[:space:][:cntrl:]] ]]; then
     echo 'A single-line GitHub Actions token is required on stdin.' >&2
     exit 64
 fi
