@@ -55,6 +55,7 @@ services:
 
   babbi_world:
     image: ghcr.io/kungfusaini/babbi-world:latest
+    restart: unless-stopped
     networks:
       - aether-network
 
