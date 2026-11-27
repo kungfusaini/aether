@@ -50,6 +50,7 @@ sudo, arbitrary root SSH, or rootful Portainer access. Keep the host patched.
 | `egress.nft` | `/etc/babbi-apps/egress.nft` |
 | `egress.service` | `/etc/systemd/system/babbi-apps-egress.service` |
 | `daemon.json` | `/home/babbi-apps/.config/docker/daemon.json` |
+| `rootless-docker.conf` | `/home/babbi-apps/.config/systemd/user/docker.service.d/network.conf` |
 | `compose.yml`, `demo/` | `/home/babbi-apps/platform/` |
 
 The system drop-ins, nft rules, backing image and provisioning helpers are
@@ -69,6 +70,14 @@ The rootful Docker service stays running. `dockerd-rootless-setuptool.sh install
 it persistent across logout/reboot. Do not rerun the provisioning script to update
 an existing workspace: apply reviewed source changes to their installed targets.
 Restarting user@2000 affects only her workspace, but interrupts all of her apps.
+
+Docker 29's default detached-network-namespace mode broke embedded DNS forwarding
+in this hardened workspace during the runtime security upgrade. The user-service
+`network.conf` uses the upstream compatibility switch
+`DOCKERD_ROOTLESS_ROOTLESSKIT_DETACH_NETNS=false`, retaining the earlier isolated
+daemon network. Keep it across upgrades; do not compensate by weakening the
+firewall or disabling TLS verification. Verify embedded DNS, public HTTPS egress,
+connector readiness and public app routes after restarting the engine.
 
 ## Initialize the platform securely
 

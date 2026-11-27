@@ -36,6 +36,8 @@ grep -Fxq "$include" /etc/nftables.conf || printf '\n# Babbi rootless workspace 
 nft -c -f /etc/nftables.conf
 install -d -o babbi-apps -g babbi-apps -m 700 /home/babbi-apps/.config /home/babbi-apps/.config/docker /home/babbi-apps/tmp
 install -o babbi-apps -g babbi-apps -m 600 "$source_dir/daemon.json" /home/babbi-apps/.config/docker/daemon.json
+install -d -o babbi-apps -g babbi-apps -m 700 /home/babbi-apps/.config/systemd /home/babbi-apps/.config/systemd/user /home/babbi-apps/.config/systemd/user/docker.service.d
+install -o babbi-apps -g babbi-apps -m 600 "$source_dir/rootless-docker.conf" /home/babbi-apps/.config/systemd/user/docker.service.d/network.conf
 systemctl daemon-reload
 systemctl enable --now babbi-apps-egress.service
 loginctl enable-linger babbi-apps
