@@ -1,0 +1,126 @@
+name: Babbi apps maintenance
+
+# Operator-only maintenance in Aether, never in her website/app repositories.
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        required: true
+        options: [inspect, start-tunnel, encrypted-handoff]
+        default: inspect
+      recipient:
+        description: Public age recipient (required only for encrypted-handoff)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: babbi-apps-maintenance
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    runs-on: ubuntu-24.04-arm
+    env:
+      DEPLOY_HOST: ${{ secrets.AETHER_HOST }}
+      DEPLOY_USER: ${{ secrets.AETHER_USER }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare existing operator SSH credential
+        env:
+          SSH_KEY: ${{ secrets.AETHER_SSH_KEY }}
+        run: |
+          umask 077
+          printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/babbi-operator-key"
+          cp services/babbi-apps/aether_known_hosts "$RUNNER_TEMP/babbi-known-hosts"
+      - name: Inspect workspace without changing it
+        if: inputs.operation == 'inspect'
+        run: |
+          ssh -T -F /dev/null -i "$RUNNER_TEMP/babbi-operator-key" \
+            -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=yes -o HostKeyAlias=aether-babbi-apps \
+            -o UserKnownHostsFile="$RUNNER_TEMP/babbi-known-hosts" \
+            "$DEPLOY_USER@$DEPLOY_HOST" '
+              set -eu
+              date -Is
+              uptime
+              systemctl is-active ssh user@2000.service babbi-apps-egress.service || true
+              systemctl show user-2000.slice -p MemoryCurrent -p MemoryMax -p TasksCurrent
+              timeout 15 runuser -u babbi-apps -- env HOME=/home/babbi-apps DOCKER_HOST=unix:///run/user/2000/docker.sock docker ps --format "{{.Names}} {{.Status}}"
+              curl --max-time 8 -fsS -H "Host: demo.babbi.world" http://127.0.0.1:18080/ -o /dev/null
+              echo demo-route-ok
+            '
+      - name: Stage reviewed platform configuration
+        if: inputs.operation == 'start-tunnel'
+        run: |
+          scp -F /dev/null -i "$RUNNER_TEMP/babbi-operator-key" \
+            -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=yes -o HostKeyAlias=aether-babbi-apps \
+            -o UserKnownHostsFile="$RUNNER_TEMP/babbi-known-hosts" \
+            services/babbi-apps/compose.yml \
+            "$DEPLOY_USER@$DEPLOY_HOST:/var/lib/babbi-apps/platform-compose.yml"
+      - name: Start only the dedicated app tunnel
+        if: inputs.operation == 'start-tunnel'
+        env:
+          TUNNEL_TOKEN: ${{ secrets.BABBI_APPS_TUNNEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$TUNNEL_TOKEN" | ssh -T -F /dev/null \
+            -i "$RUNNER_TEMP/babbi-operator-key" \
+            -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=yes -o HostKeyAlias=aether-babbi-apps \
+            -o UserKnownHostsFile="$RUNNER_TEMP/babbi-known-hosts" \
+            "$DEPLOY_USER@$DEPLOY_HOST" '
+              set -eu
+              IFS= read -r -t 15 -n 16384 token
+              test -n "$token" && test "${#token}" -lt 16384
+              cd /home/babbi-apps/platform
+              if ! cmp -s compose.yml /var/lib/babbi-apps/platform-compose.yml; then
+                # Preserve any unexpected owner/operator edits to the platform.
+                test "$(sha256sum compose.yml | cut -d " " -f1)" = 0335cbb1c063b811c7b37843d4cec113827e109842d378d48d6d85d49c682318
+                install -o 2000 -g 2000 -m 600 /var/lib/babbi-apps/platform-compose.yml compose.yml
+              fi
+              tmp=$(mktemp .secrets/.tunnel-token.XXXXXX)
+              trap '\''rm -f -- "$tmp"'\'' EXIT
+              printf "%s" "$token" > "$tmp"
+              unset token
+              chmod 600 "$tmp"
+              chown 2000:2000 "$tmp"
+              mv "$tmp" .secrets/tunnel-token
+              timeout 180 runuser -u babbi-apps -- env HOME=/home/babbi-apps DOCKER_HOST=unix:///run/user/2000/docker.sock docker compose --profile tunnel up -d --no-deps --force-recreate cloudflared
+              curl --fail --silent --show-error --retry 20 --retry-all-errors --retry-delay 1 --max-time 3 http://127.0.0.1:12000/ready -o /dev/null
+              echo tunnel-connector-ready
+              systemctl show user-2000.slice -p MemoryCurrent -p MemoryMax
+            '
+      - name: Install runner-only age for encrypted handoff
+        if: inputs.operation == 'encrypted-handoff'
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends age
+      - name: Encrypt initial password directly from SSH
+        if: inputs.operation == 'encrypted-handoff'
+        env:
+          RECIPIENT: ${{ inputs.recipient }}
+        run: |
+          set -euo pipefail
+          test -n "$RECIPIENT"
+          umask 077
+          ssh -T -F /dev/null -i "$RUNNER_TEMP/babbi-operator-key" \
+            -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=yes -o HostKeyAlias=aether-babbi-apps \
+            -o UserKnownHostsFile="$RUNNER_TEMP/babbi-known-hosts" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'cat /home/babbi-apps/platform/.secrets/portainer-admin-password' \
+            | age --encrypt --recipient "$RECIPIENT" > "$RUNNER_TEMP/babbi-handoff.age"
+      - uses: actions/upload-artifact@v4
+        if: inputs.operation == 'encrypted-handoff'
+        with:
+          name: babbi-encrypted-handoff
+          path: ${{ runner.temp }}/babbi-handoff.age
+          retention-days: 1
+      - name: Remove temporary operator key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/babbi-operator-key" "$RUNNER_TEMP/babbi-known-hosts"

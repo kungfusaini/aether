@@ -113,6 +113,30 @@ unauthenticated management denial, and the existing website/email endpoints.
 No Cloudflare configuration or public URL is implied merely by installing the
 local platform. Record actual tunnel/DNS status in the project worklog.
 
+## Operator maintenance through existing Aether CI
+
+`.github/workflows/babbi-apps-maintenance.yml` is manual-only and uses Aether's
+existing operator SSH secrets, not credentials from her repositories. It pins the
+server's previously trusted Ed25519 public key via `aether_known_hosts` and keeps
+strict host verification. It does not change SSH/firewall policy.
+
+- `inspect`: read workspace service/resource state and check the local demo.
+- `start-tunnel`: stage the reviewed platform configuration (refusing unexpected
+  edits), install sealed `BABBI_APPS_TUNNEL_TOKEN` as a private UID-2000 file,
+  recreate **only cloudflared**, and require its localhost `/ready` check. Secret
+  rotation requires recreation because bind-mounted file inodes otherwise persist.
+  The connector runs as root **inside the rootless namespace**, with capabilities
+  dropped and read-only root filesystem, so it can read the UID-2000 mode-600 file.
+- `encrypted-handoff`: encrypt the machine-generated initial Portainer password
+  directly from SSH to a caller-supplied **public age recipient**. The one-day
+  artifact contains ciphertext only. Keep the private recipient key local, decrypt
+  only in a private terminal for the human handoff, and rotate the initial password.
+  Never pass a real password as a workflow input or print it in logs/chat.
+
+The connector's metrics/readiness port is bound only to 127.0.0.1:12000. If the
+laptop's SSH path is unavailable, the approved CI route can still perform these
+scoped operations without widening her server privileges or unbanning an IP.
+
 ## Verification and recovery
 
 - `bash verify-host.sh` on Aether: bounded live checks of rootless mode, caps,

@@ -64,7 +64,16 @@ services:
     profiles: [tunnel]
     image: cloudflare/cloudflared:2026.11.2
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel_token
+    # Root inside this rootless namespace maps to unprivileged host UID 2000.
+    # The upstream image's UID 65532 cannot read the mode-600 connector secret.
+    user: "0:0"
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,nosuid,noexec
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 run --token-file /run/secrets/tunnel_token
+    ports:
+      - 127.0.0.1:12000:2000
     secrets: [tunnel_token]
     networks: [edge]
     mem_limit: 96m
