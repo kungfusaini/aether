@@ -55,6 +55,24 @@ jobs:
               curl --max-time 8 -fsS -H "Host: demo.babbi.world" http://127.0.0.1:18080/ -o /dev/null
               echo demo-route-ok
             '
+      - name: Verify published app routes from the CI network
+        if: inputs.operation == 'inspect'
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          checks = {
+              'https://demo.babbi.world/': '200',
+              'https://apps.babbi.world/': '200',
+              'https://apps.babbi.world/api/endpoints': '401',
+              'https://no-such-app.babbi.world/': '404',
+              'https://babbi.world/': '200',
+              'https://www.babbi.world/': '200',
+          }
+          for url, expected in checks.items():
+              result = subprocess.run(['curl', '--silent', '--show-error', '--connect-timeout', '5', '--max-time', '15', '--retry', '3', '--retry-all-errors', '--retry-delay', '1', '-o', '/dev/null', '-w', '%{http_code}', url], capture_output=True, text=True)
+              assert result.returncode == 0 and result.stdout == expected, f'{url}: expected {expected}, got {result.stdout} (curl status {result.returncode})'
+              print(url, result.stdout)
+          PY
       - name: Stage reviewed platform configuration
         if: inputs.operation == 'start-tunnel'
         run: |

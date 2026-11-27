@@ -120,7 +120,9 @@ existing operator SSH secrets, not credentials from her repositories. It pins th
 server's previously trusted Ed25519 public key via `aether_known_hosts` and keeps
 strict host verification. It does not change SSH/firewall policy.
 
-- `inspect`: read workspace service/resource state and check the local demo.
+- `inspect`: read workspace service/resource state, check the local demo, and
+  verify normal public DNS/HTTPS routes from CI (including anonymous management
+  denial and unchanged apex/www). Public checks require ingress to be configured.
 - `start-tunnel`: stage the reviewed platform configuration (refusing unexpected
   edits), install sealed `BABBI_APPS_TUNNEL_TOKEN` as a private UID-2000 file,
   recreate **only cloudflared**, and require its localhost `/ready` check. Secret
